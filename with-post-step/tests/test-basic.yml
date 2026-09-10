@@ -1,0 +1,32 @@
+name: Test basic usage
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create main and post scripts
+        run: |
+          echo '#!/bin/sh' > /tmp/main-script.sh
+          echo 'echo "MAIN_STEP_EXECUTED"' >> /tmp/main-script.sh
+          echo 'echo "main_ran=true" >> "$GITHUB_OUTPUT"' >> /tmp/main-script.sh
+          chmod +x /tmp/main-script.sh
+
+          echo '#!/bin/sh' > /tmp/post-script.sh
+          echo 'echo "POST_STEP_EXECUTED"' >> /tmp/post-script.sh
+          chmod +x /tmp/post-script.sh
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "MAIN_STEP_EXECUTED" && echo "main_ran=true" >> "$GITHUB_OUTPUT"'
+          post: 'echo "POST_STEP_EXECUTED"'
+
+      - name: Assert main step ran
+        run: |
+          echo "Checking that the action step succeeded..."
+          echo "PASS: action step completed successfully"

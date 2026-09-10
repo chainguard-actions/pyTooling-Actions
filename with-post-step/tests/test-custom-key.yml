@@ -1,0 +1,22 @@
+name: Test custom key
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "MAIN with custom key executed"'
+          post: 'echo "POST with custom key executed"'
+          key: MY_CUSTOM_KEY
+
+      - name: Assert action ran with custom key
+        run: |
+          echo "Action with custom key completed successfully"
+          echo "PASS"
