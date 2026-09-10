@@ -1,0 +1,44 @@
+name: Test key uppercase - lowercase key input is uppercased automatically
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare sentinel files
+        run: |
+          echo "not-executed" > /tmp/main-lower-ran.txt
+          echo "not-executed" > /tmp/post-lower-ran.txt
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "main-lower-executed" > /tmp/main-lower-ran.txt'
+          post: 'echo "post-lower-executed" > /tmp/post-lower-ran.txt'
+          key: 'mykey'
+        env:
+          STATE_MYKEY: 'true'
+
+      - name: Assert post command ran (key was uppercased to MYKEY, STATE_MYKEY was set)
+        run: |
+          CONTENT="$(cat /tmp/post-lower-ran.txt)"
+          echo "post output: $CONTENT"
+          if ! echo "$CONTENT" | grep -q "post-lower-executed"; then
+            echo "FAIL: post command did not run - key was not uppercased correctly"
+            exit 1
+          fi
+          echo "PASS: key was uppercased correctly (mykey -> MYKEY), post command ran"
+
+      - name: Assert main command did NOT run (post path taken via uppercased key)
+        run: |
+          CONTENT="$(cat /tmp/main-lower-ran.txt)"
+          echo "main output: $CONTENT"
+          if echo "$CONTENT" | grep -q "main-lower-executed"; then
+            echo "FAIL: main command ran when STATE_MYKEY was set (key should have been uppercased)"
+            exit 1
+          fi
+          echo "PASS: main command did not run, confirming key uppercasing works"

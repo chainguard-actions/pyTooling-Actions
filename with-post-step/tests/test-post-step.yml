@@ -1,0 +1,43 @@
+name: Test post step - post command runs when STATE_POST env var is set
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare sentinel files
+        run: |
+          echo "not-executed" > /tmp/main-ran.txt
+          echo "not-executed" > /tmp/post-ran.txt
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "main-step-executed" > /tmp/main-ran.txt'
+          post: 'echo "post-step-executed" > /tmp/post-ran.txt'
+        env:
+          STATE_POST: 'true'
+
+      - name: Assert post command ran (STATE_POST was set)
+        run: |
+          CONTENT="$(cat /tmp/post-ran.txt)"
+          echo "post output: $CONTENT"
+          if ! echo "$CONTENT" | grep -q "post-step-executed"; then
+            echo "FAIL: post command did not run when STATE_POST was set"
+            exit 1
+          fi
+          echo "PASS: post command ran"
+
+      - name: Assert main command did NOT run (post step path taken)
+        run: |
+          CONTENT="$(cat /tmp/main-ran.txt)"
+          echo "main output: $CONTENT"
+          if echo "$CONTENT" | grep -q "main-step-executed"; then
+            echo "FAIL: main command ran when STATE_POST was set (should have run post)"
+            exit 1
+          fi
+          echo "PASS: main command did not run during post step"

@@ -1,0 +1,42 @@
+name: Test custom key - main step runs with custom key name
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare sentinel files
+        run: |
+          echo "not-executed" > /tmp/main-custom-ran.txt
+          echo "not-executed" > /tmp/post-custom-ran.txt
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "main-custom-executed" > /tmp/main-custom-ran.txt'
+          post: 'echo "post-custom-executed" > /tmp/post-custom-ran.txt'
+          key: 'MYKEY'
+
+      - name: Assert main command ran (STATE_MYKEY not set, so main path taken)
+        run: |
+          CONTENT="$(cat /tmp/main-custom-ran.txt)"
+          echo "main output: $CONTENT"
+          if ! echo "$CONTENT" | grep -q "main-custom-executed"; then
+            echo "FAIL: main command did not run with custom key"
+            exit 1
+          fi
+          echo "PASS: main command ran with custom key"
+
+      - name: Assert post command did NOT run
+        run: |
+          CONTENT="$(cat /tmp/post-custom-ran.txt)"
+          echo "post output: $CONTENT"
+          if echo "$CONTENT" | grep -q "post-custom-executed"; then
+            echo "FAIL: post command ran during main step with custom key"
+            exit 1
+          fi
+          echo "PASS: post command did not run during main step"

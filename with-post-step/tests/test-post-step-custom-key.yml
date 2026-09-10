@@ -1,0 +1,44 @@
+name: Test post step with custom key - post runs when custom STATE key is set
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare sentinel files
+        run: |
+          echo "not-executed" > /tmp/main-cleanup-ran.txt
+          echo "not-executed" > /tmp/post-cleanup-ran.txt
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "main-cleanup-executed" > /tmp/main-cleanup-ran.txt'
+          post: 'echo "post-cleanup-executed" > /tmp/post-cleanup-ran.txt'
+          key: 'CLEANUP'
+        env:
+          STATE_CLEANUP: 'true'
+
+      - name: Assert post command ran (STATE_CLEANUP was set)
+        run: |
+          CONTENT="$(cat /tmp/post-cleanup-ran.txt)"
+          echo "post output: $CONTENT"
+          if ! echo "$CONTENT" | grep -q "post-cleanup-executed"; then
+            echo "FAIL: post command did not run when STATE_CLEANUP was set"
+            exit 1
+          fi
+          echo "PASS: post command ran with custom key CLEANUP"
+
+      - name: Assert main command did NOT run (post path taken)
+        run: |
+          CONTENT="$(cat /tmp/main-cleanup-ran.txt)"
+          echo "main output: $CONTENT"
+          if echo "$CONTENT" | grep -q "main-cleanup-executed"; then
+            echo "FAIL: main command ran when STATE_CLEANUP was set (should have run post)"
+            exit 1
+          fi
+          echo "PASS: main command did not run during post step with custom key"

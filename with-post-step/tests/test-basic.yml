@@ -1,0 +1,41 @@
+name: Test basic usage - main step runs command
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "main-step-executed" > /tmp/main-ran.txt'
+          post: 'echo "post-step-executed" > /tmp/post-ran.txt'
+
+      - name: Assert main command ran
+        run: |
+          if [ ! -f /tmp/main-ran.txt ]; then
+            echo "FAIL: /tmp/main-ran.txt does not exist"
+            exit 1
+          fi
+          CONTENT="$(cat /tmp/main-ran.txt)"
+          echo "main output: $CONTENT"
+          if ! echo "$CONTENT" | grep -q "main-step-executed"; then
+            echo "FAIL: main command did not run as expected"
+            exit 1
+          fi
+          echo "PASS: main command ran"
+
+      - name: Assert post command did NOT run (we are in main step, STATE_POST not set)
+        run: |
+          if [ -f /tmp/post-ran.txt ]; then
+            CONTENT="$(cat /tmp/post-ran.txt)"
+            if echo "$CONTENT" | grep -q "post-step-executed"; then
+              echo "FAIL: post command ran during main step"
+              exit 1
+            fi
+          fi
+          echo "PASS: post command did not run during main step"
