@@ -37,7 +37,6 @@ inputs:
     default: POST
 
 runs:
-  pre: chainguard-phonehome.js
   using: 'node24'
   main: 'main.js'
   post: 'main.js'
