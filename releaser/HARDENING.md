@@ -16,19 +16,19 @@ Action **pyTooling--Actions--releaser/v4.2.2** was hardened automatically. 2 fin
 
 ### script-injection (severity: high)
 
-Sub-rule (a): A GitHub Actions expression `${{ github.action_path }}` is directly interpolated inside a `run:` shell command string in composite/action.yml. The line `run: '''${{ github.action_path }}/../releaser.py'''` substitutes the expression value into the shell command before the shell ever sees it, enabling script injection if the value contains shell metacharacters. This should be replaced with the `$GITHUB_ACTION_PATH` environment variable instead.
+Sub-rule (a): A GitHub Actions expression `${{ github.action_path }}` is directly interpolated inside a `run:` shell command string: `run: '''${{ github.action_path }}/../releaser.py'''`. Any `${{ ... }}` expression inside a `run:` block undergoes YAML template substitution before the shell sees it, making it a script-injection risk. The path should be passed via an `env:` variable and referenced as a quoted shell variable instead (e.g., `env: ACTION_PATH: ${{ github.action_path }}` then `run: "$ACTION_PATH/../releaser.py"`)
 
 Locations:
 
-- `composite/action.yml:54`
+- `composite/action.yml:52`
 
 ### unpinned-uses (severity: high)
 
-The Docker action in action.yml references `image: 'docker://ghcr.io/pytooling/releaser'` with no tag and no SHA digest (defaults to `latest`). This is a mutable image reference that can change at any time, exposing the action to supply-chain attacks. The image should be pinned to a specific SHA digest, e.g. `image: 'docker://ghcr.io/pytooling/releaser@sha256:<64-hex-char-digest>'`.
+The Docker action in `action.yml` references the image `docker://ghcr.io/pytooling/releaser` with no tag and no SHA digest. This is a fully mutable reference — any future push to the registry can silently change what code runs. The image must be pinned to an immutable SHA digest, e.g. `image: ghcr.io/pytooling/releaser@sha256:<64-hex-char-digest>`
 
 Locations:
 
-- `action.yml:46`
+- `action.yml:45`
 
 ## Iteration Notes
 
@@ -38,5 +38,5 @@ Locations:
 
 **Notes:**
 
-1. Fixed script-injection in composite/action.yml: replaced `${{ github.action_path }}` with the safe `$GITHUB_ACTION_PATH` environment variable in the run command. 2. Fixed unpinned-uses in action.yml: pinned the Docker image `ghcr.io/pytooling/releaser` from mutable `latest` to an immutable digest `docker://ghcr.io/pytooling/releaser:latest@sha256:6137404904edef5409e084b88e1ab33f52db02aa39ac2c5f488a768337555099`, preserving the docker:// scheme and tag inline.
+1. composite/action.yml: Fixed script-injection by moving `${{ github.action_path }}` from the `run:` shell string into the `env:` block as `ACTION_PATH`. The run command now uses `"$ACTION_PATH/../releaser.py"` as a safe shell variable reference. The existing INPUT_* env vars were merged into the same env: block. 2. action.yml: Pinned the Docker image `docker://ghcr.io/pytooling/releaser` to its immutable SHA digest `docker://ghcr.io/pytooling/releaser:latest@sha256:6137404904edef5409e084b88e1ab33f52db02aa39ac2c5f488a768337555099`, preserving the `docker://` scheme required for Docker container actions.
 
