@@ -36,7 +36,7 @@ function run(cmd) {
   });
 }
 
-const key = process.env.INPUT_KEY.toUpperCase().replace(/[\r\n]/g, '');
+const key = process.env.INPUT_KEY.toUpperCase();
 
 if ( process.env[`STATE_${key}`] !== undefined ) { // Are we in the 'post' step?
   run(process.env.INPUT_POST);
