@@ -16,11 +16,11 @@ Action **pyTooling--Actions--with-post-step/v8.0.0** was hardened automatically.
 
 ### github-env-injection (severity: high)
 
-In main.js, the value of `inputs.key` (accessed as `process.env.INPUT_KEY`) is uppercased and written directly to the `GITHUB_STATE` special environment file without newline sanitization. Specifically: `appendFileSync(process.env.GITHUB_STATE, \`${key}=true${EOL}\`)` where `key = process.env.INPUT_KEY.toUpperCase()`. A caller can supply a value for `inputs.key` containing embedded newline characters (e.g. `FOO=bar\nMALICIOUS`) to inject arbitrary additional entries into the runner's state file. The fix is to strip newlines before writing: `key.replace(/[\r\n]/g, '')` or equivalent sanitization before the `appendFileSync` call.
+In main.js, the value of `inputs.key` (a caller-controlled input) is read as `process.env.INPUT_KEY`, transformed with `.toUpperCase()`, and then written directly to the special GitHub environment file `GITHUB_STATE` via `appendFileSync(process.env.GITHUB_STATE, \`${key}=true${EOL}\`)` without any newline sanitization (i.e., no `printf '%s' ... | tr -d '\n\r'` equivalent). An attacker who controls the `key` input could inject newlines to write arbitrary key-value pairs into the runner's state file, potentially influencing subsequent steps. The fix is to strip newline characters from `key` before writing it to `GITHUB_STATE`.
 
 Locations:
 
-- `main.js:46`
+- `main.js:44`
 
 ## Iteration Notes
 
@@ -30,5 +30,5 @@ Locations:
 
 **Notes:**
 
-Fixed github-env-injection in hardened/action/main.js: Added `.replace(/[\r\n]/g, '')` to sanitize the `key` variable (derived from `process.env.INPUT_KEY.toUpperCase()`) before it is written to the GITHUB_STATE file via `appendFileSync`. This prevents an attacker from injecting arbitrary entries into the runner's state file by embedding newline characters in the `inputs.key` value.
+In hardened/action/main.js, added `.replace(/[\r\n]/g, '')` to the `key` variable assignment (line 44) to strip carriage return and newline characters before writing to GITHUB_STATE. This prevents an attacker who controls the `key` input from injecting newlines to write arbitrary key-value pairs into the runner's state file.
 
