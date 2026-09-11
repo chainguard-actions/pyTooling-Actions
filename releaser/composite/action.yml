@@ -50,7 +50,6 @@ runs:
       pip install --disable-pip-version-check --progress-bar off $UBUNTU_2404_ARGS PyGithub
 
   - shell: bash
-    run: '"$ACTION_PATH/../releaser.py"'
     env:
       ACTION_PATH: ${{ github.action_path }}
       INPUT_TOKEN: ${{ inputs.token }}
@@ -58,3 +57,4 @@ runs:
       INPUT_TAG: ${{ inputs.tag }}
       INPUT_RM: ${{ inputs.rm }}
       INPUT_SNAPSHOTS: ${{ inputs.snapshots }}
+    run: '"$ACTION_PATH/../releaser.py"'
