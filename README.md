@@ -9,7 +9,8 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
 | v4.2.2 | [`v4.2.2`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v4.2.2) | — |
-| v8.0.0 | [`v8.0.0`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v8.0.0) | [`04f49c7`](https://github.com/pyTooling/Actions/commit/04f49c75e87a9f0573a6effb5726f73224b1817c) |
+| v8.0.0 | [`v8.0.0`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v8.0.0) | — |
+| v8.2.0 | [`v8.2.0`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v8.2.0) | [`120488e`](https://github.com/pyTooling/Actions/commit/120488e94882d03957f1023301831e7e14bbda83) |
 
 ## Privacy
 
