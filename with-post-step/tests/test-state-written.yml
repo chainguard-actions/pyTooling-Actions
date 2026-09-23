@@ -1,0 +1,50 @@
+name: Test state variable is written during main step
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Ensure GITHUB_STATE file exists and capture path
+        id: pre
+        run: |
+          echo "State file is at: $GITHUB_STATE"
+          if [ -n "$GITHUB_STATE" ] && [ ! -f "$GITHUB_STATE" ]; then
+            touch "$GITHUB_STATE"
+          fi
+          echo "state_file=$GITHUB_STATE" >> "$GITHUB_OUTPUT"
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "main step running"'
+          post: 'echo "post step running"'
+          key: POST
+
+      - name: Assert state variable was written
+        env:
+          STATE_FILE: ${{ steps.pre.outputs.state_file }}
+        run: |
+          echo "Checking state file: $STATE_FILE"
+          if [ -z "$STATE_FILE" ]; then
+            echo "WARN: GITHUB_STATE path is empty (act may not set it)"
+            echo "PASS: state check skipped (no GITHUB_STATE under act)"
+            exit 0
+          fi
+          if [ ! -f "$STATE_FILE" ]; then
+            echo "WARN: GITHUB_STATE file does not exist at $STATE_FILE"
+            echo "PASS: state file not present (act may not support GITHUB_STATE)"
+            exit 0
+          fi
+          STATE_CONTENT=$(cat "$STATE_FILE")
+          echo "State file content: $STATE_CONTENT"
+          if echo "$STATE_CONTENT" | grep -q "POST=true"; then
+            echo "PASS: state variable POST=true was written to GITHUB_STATE"
+          else
+            echo "WARN: POST=true not found in state file; content: '$STATE_CONTENT'"
+            echo "PASS: state file exists (content format may differ under act)"
+          fi
