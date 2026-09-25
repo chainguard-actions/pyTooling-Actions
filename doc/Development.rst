@@ -1,0 +1,197 @@
+Development
+###########
+
+.. todo:: Development - Explain how to write new job templates.
+
+
+.. _DEV/ConditionalJobs:
+
+Conditional Jobs
+****************
+
+Almost every job template offers switches to disable parts of a pipeline: ``apptest``, ``documentation_steps``,
+``cleanup``, ... A disabled job is not removed from the pipeline, it is *skipped*, and a skipped job influences all
+jobs depending on it. Handling that influence correctly is the single most error-prone part of writing a job template,
+therefore the rules are collected here.
+
+
+.. _DEV/ConditionalJobs/StatusCheckFunctions:
+
+Status Check Functions
+======================
+
+GitHub Actions offers four *status check functions*, which can be used in a job's ``if`` expression:
+
++---------------------+------------------------------------------------------------------------------------------+
+| Function            | Result                                                                                   |
++=====================+==========================================================================================+
+| ``success()``       | ``true``, if no job the current job depends on failed or was skipped.                    |
++---------------------+------------------------------------------------------------------------------------------+
+| ``failure()``       | ``true``, if any job the current job depends on failed.                                  |
++---------------------+------------------------------------------------------------------------------------------+
+| ``cancelled()``     | ``true``, if the workflow was cancelled.                                                 |
++---------------------+------------------------------------------------------------------------------------------+
+| ``always()``        | ``true``, always - even if the workflow was cancelled.                                   |
++---------------------+------------------------------------------------------------------------------------------+
+
+If a job has an ``if`` expression, but that expression contains **no** status check function at all, GitHub adds an
+implicit ``success()``. This is the behavior that surprises most template authors, because such a condition reads like
+a pure feature switch, while it also demands that every dependency succeeded.
+
+.. code-block:: yaml
+
+   # This condition is evaluated as:  success() && contains(inputs.documentation_steps, 'pages')
+   if: ${{ contains(inputs.documentation_steps, 'pages') }}
+
+
+.. _DEV/ConditionalJobs/Propagation:
+
+Propagation of Skipped Jobs
+===========================
+
+The status check functions are not evaluated on the jobs listed in ``needs``, but on the **transitive dependency
+closure** of the job: all jobs reachable from the current job by following ``needs`` edges. Therefore a skipped job
+propagates its state to jobs it isn't directly connected to.
+
+An intermediate job does **not** stop that propagation. A job surviving on ``!cancelled()`` runs itself, but the
+skipped ancestor remains part of the closure of all its successors:
+
+.. code-block::
+
+   AppTestingParams  ->  AppTesting  ->  PublishTestResults  ->  Documentation  ->  PDFDocumentation
+     (skipped by            (skipped)      (if: !cancelled()     (if: !cancelled()   (if: contains(...))
+      apptest: false)                       - runs)               - runs)             => skipped!
+
+With ``apptest: false``, ``PDFDocumentation`` was skipped although its own condition was ``true`` and neither of its
+two ``needs`` jobs was skipped. Symmetrically, a job outside the closure cannot suppress a job guarded by
+``!failure()``.
+
+.. attention::
+
+   A skipped job is not an error, so nothing in the pipeline turns red. The affected jobs are simply missing from the
+   run, which makes this class of defect easy to overlook - the pipeline is green, but it did less than it claims.
+
+
+.. _DEV/ConditionalJobs/Guidelines:
+
+Guidelines
+==========
+
+Every job whose ``if`` expression contains a feature switch needs an explicit status check function, otherwise the
+implicit ``success()`` links the switch to unrelated jobs:
+
+.. code-block:: yaml
+
+   if: >-
+     ${{ !failure() && !cancelled()
+      && contains(inputs.documentation_steps, 'pages')
+     }}
+
+Which function to choose:
+
+* ``!failure() && !cancelled()`` - the job's own condition decides, a skipped dependency is tolerated, but a failed
+  dependency suppresses the job. This is the default for optional jobs (:ref:`JOBTMPL/PublishToGitHubPages`,
+  :ref:`JOBTMPL/LaTeXDocumentation`) as well as for release jobs, which must not run if any check failed.
+* ``!cancelled()`` - the job runs regardless of the outcome of its dependencies. Use it for jobs collecting or
+  cleaning up results (:ref:`JOBTMPL/PublishTestResults`, :ref:`JOBTMPL/CleanupArtifacts`), because artifacts of a
+  failed run still need to be published or deleted.
+* ``always()`` - avoid it. It also runs the job when the workflow was cancelled, which delays the cancellation.
+
+.. hint::
+
+   Do not use ``success() || failure()`` as a substitute for ``!cancelled()``. It is ``false`` if a dependency was
+   *skipped*, because a skipped dependency is neither a success nor a failure.
+
+A status check function tolerates a *skipped* dependency, which is exactly what it is for. A job downloading an
+artifact must additionally demand that the job **producing** that artifact succeeded, because a tolerated skip leaves
+the artifact missing:
+
+.. code-block:: yaml
+
+   if: >-
+     ${{ !failure() && !cancelled()
+      && needs.Documentation.result == 'success'
+      && contains(inputs.documentation_steps, 'pages')
+     }}
+
+Without the ``needs.<job>.result`` term the job starts and fails while downloading:
+
+.. code-block:: text
+
+   Unable to download artifact(s): Artifact not found for name: documentation-HTML
+
+.. important::
+
+   The distinction is between an *unrelated* dependency and a *producing* one. ``AppTesting``, skipped by
+   ``apptest: 'false'``, has nothing to do with the documentation and must not suppress it - that is the reason the
+   status check function is there. ``Documentation`` uploads what :ref:`JOBTMPL/PublishToGitHubPages` downloads, so
+   its skip has to suppress it.
+
+   Observed on a real pipeline: three packaging jobs were cancelled by GitHub, the cascade skipped the documentation
+   job, and the publishing job ran anyway on the strength of ``!failure() && !cancelled()`` alone.
+
+A condition hard-coded in a job template that gates a job on the **ref** is a blocklist of the refs that cannot work,
+never an allowlist of the refs that have been seen to work. A deployment environment rejects some refs and admits the
+rest; observing one rejection says nothing about which of the others are admitted, so an allowlist built from that
+observation silently drops every ref that was simply never tried - and it drops it by *skipping* the job, which no
+pipeline reports. Where the admitted refs are per-repository configuration, the condition belongs into an input set
+by the caller, like :ref:`JOBTMPL/CompletePipeline/Input/publish_pages_on`.
+
+.. attention::
+
+   :ref:`JOBTMPL/PublishToGitHubPages` was guarded this way after a feature branch was rejected by the
+   ``github-pages`` environment. The condition allowed the default branch and ``dev``, the two refs that had been
+   observed to deploy - which silently stopped publishing on **tags**, i.e. exactly the runs whose documentation
+   matters most.
+
+Conditions combining a status check function with further terms are written as a folded block scalar, one term per
+line, so a condition can be read - and reviewed - without horizontal scrolling:
+
+.. code-block:: yaml
+
+   if: >-
+     ${{ !failure() && !cancelled()
+      && needs.Prepare.outputs.is_release_commit == 'true'
+      && github.event_name != 'schedule'
+     }}
+
+
+.. _DEV/ConditionalJobs/Verification:
+
+Verification
+============
+
+A skipped job cannot be detected by looking at a green pipeline, so each combination needs a verification pipeline that
+actually exercises it. The workflows in :file:`.github/workflows/_Checking_*.yml` run on every push - each as its own
+pipeline, so a failure is read in a list of its own - and cover the relevant combinations:
+:file:`_Checking_SimplePackage_Pipeline.yml` runs with application testing enabled, while
+:file:`_Checking_NamespacePackage_Pipeline.yml` disables it and requests ``html latex pdf``, so it combines a skipped
+job with jobs conditioned on ``documentation_steps``.
+
+When a new switch is added to a job template, add a combination disabling it to one of these pipelines and check the
+list of executed jobs of the resulting run, not only its conclusion.
+
+
+.. _DEV/Release:
+
+Releasing This Repository
+#########################
+
+The verification workflows check; :file:`.github/workflows/Pipeline.yml` releases. It holds no test jobs, so a release
+run is short enough to read.
+
+1. A merge commit on ``main`` starts it. ``Prepare`` (:ref:`JOBTMPL/PrepareJob`) classifies the commit, and
+   ``Verifications`` waits for the runs of the five :file:`_Checking_*.yml` workflows for that commit - they were
+   started by the same push - and fails if one of them didn't succeed.
+2. ``TriggerTaggedRelease`` (:ref:`JOBTMPL/TagReleaseCommit`) tags a release commit, using the version from the
+   pull-request's title.
+3. A tag created with the pipeline's token raises no ``push`` event, so the job template starts this workflow again
+   through ``workflow_dispatch`` at the new tag - that is what its ``workflow`` input names.
+4. In that run ``ReleasePage`` (:ref:`JOBTMPL/PublishReleaseNotes`) publishes the release notes from the
+   pull-request's description, and ``UpdateVersionBranch`` (:ref:`JOBTMPL/UpdateVersionBranch`) opens the
+   pull-request moving the major-version branch, e.g. ``Updating r8 from v8.1.0``.
+
+.. note::
+
+   The verification workflows keep their own ``push`` trigger and are **not** called from here. Calling them would
+   collect every job of this repository - about 170 - into one run, where a single failure is hard to find.

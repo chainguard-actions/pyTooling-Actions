@@ -1,0 +1,33 @@
+name: Test basic usage - main command runs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create sentinel file target directory
+        run: mkdir -p /tmp/test-basic
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "main step executed" > /tmp/test-basic/main-ran.txt'
+          post: 'echo "post step executed" > /tmp/test-basic/post-ran.txt'
+
+      - name: Assert main command ran
+        run: |
+          if [ ! -f /tmp/test-basic/main-ran.txt ]; then
+            echo "FAIL: main command did not create the expected file"
+            exit 1
+          fi
+          CONTENT="$(cat /tmp/test-basic/main-ran.txt)"
+          echo "main output: $CONTENT"
+          if ! echo "$CONTENT" | grep -q "main step executed"; then
+            echo "FAIL: main command output not as expected"
+            exit 1
+          fi
+          echo "PASS: main command ran successfully"

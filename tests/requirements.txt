@@ -1,0 +1,4 @@
+# Collect all testing requirements
+-r platform/requirements.txt
+-r typing/requirements.txt
+-r unit/requirements.txt
