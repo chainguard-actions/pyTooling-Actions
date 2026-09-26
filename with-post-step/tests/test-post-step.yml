@@ -1,0 +1,37 @@
+name: Test post step execution via STATE variable
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Simulate the post step by pre-setting the STATE variable that the action checks.
+      # When STATE_POST is set, the action runs the 'post' command instead of 'main'.
+      - name: Simulate post step environment
+        run: |
+          echo "STATE_POST=true" >> "$GITHUB_ENV"
+
+      - id: post-action
+        uses: .
+        with:
+          main: 'echo "WRONG: main should not run in post step" && exit 1'
+          post: 'echo "post-step-ran" > /tmp/post-output.txt'
+          key: POST
+
+      - name: Assert post command ran (not main)
+        run: |
+          if [ ! -f /tmp/post-output.txt ]; then
+            echo "FAIL: post command did not create output file"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/post-output.txt)
+          echo "content: $CONTENT"
+          if [ "$CONTENT" != "post-step-ran" ]; then
+            echo "FAIL: expected 'post-step-ran' but got '$CONTENT'"
+            exit 1
+          fi
+          echo "PASS: post command ran correctly when STATE variable was set"

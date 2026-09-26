@@ -1,0 +1,43 @@
+name: Test multi-command main script
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          main: |
+            echo "step1" > /tmp/multi-output.txt
+            echo "step2" >> /tmp/multi-output.txt
+            echo "step3" >> /tmp/multi-output.txt
+          post: 'echo "cleanup done"'
+
+      - name: Assert all commands in main script ran
+        run: |
+          if [ ! -f /tmp/multi-output.txt ]; then
+            echo "FAIL: output file not created"
+            exit 1
+          fi
+          LINE_COUNT=$(wc -l < /tmp/multi-output.txt)
+          echo "line count: $LINE_COUNT"
+          echo "file contents:"
+          cat /tmp/multi-output.txt
+          if [ "$LINE_COUNT" -ne 3 ]; then
+            echo "FAIL: expected 3 lines but got $LINE_COUNT"
+            exit 1
+          fi
+          if ! grep -q "step1" /tmp/multi-output.txt; then
+            echo "FAIL: step1 not found in output"
+            exit 1
+          fi
+          if ! grep -q "step3" /tmp/multi-output.txt; then
+            echo "FAIL: step3 not found in output"
+            exit 1
+          fi
+          echo "PASS: all multi-command steps ran"

@@ -1,0 +1,33 @@
+name: Test basic usage - main command runs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create sentinel file for main command
+        run: echo "sentinel-created" > /tmp/main-ran.txt
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "main step executed" && echo "main-ok" > /tmp/main-output.txt'
+          post: 'echo "post step executed"'
+
+      - name: Assert main command ran
+        run: |
+          if [ ! -f /tmp/main-output.txt ]; then
+            echo "FAIL: main command did not create output file"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/main-output.txt)
+          echo "content: $CONTENT"
+          if [ "$CONTENT" != "main-ok" ]; then
+            echo "FAIL: expected 'main-ok' but got '$CONTENT'"
+            exit 1
+          fi
+          echo "PASS: main command ran successfully"

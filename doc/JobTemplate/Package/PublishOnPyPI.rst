@@ -1,0 +1,269 @@
+.. _JOBTMPL/PublishOnPyPI:
+.. index::
+   single: PyPI; PublishOnPyPI Template
+   single: twine; PublishOnPyPI Template
+   single: delete-artifact; PublishOnPyPI Template
+   single: wheel; PublishOnPyPI Template
+   single: GitHub Action Reusable Workflow; PublishOnPyPI Template
+
+PublishOnPyPI
+#############
+
+Publish a wheel (``*.whl``) packages and/or source (``*.tar.gz``) package to :term:`PyPI`.
+
+.. topic:: Features
+
+   * Publish a Python package to :term:`PyPI` or another package registry
+     (:ref:`JOBTMPL/PublishOnPyPI/Input/pypi_upload_url`).
+
+.. topic:: Behavior
+
+   1. Download the package artifact (:ref:`JOBTMPL/PublishOnPyPI/Input/artifact`).
+   2. Setup Python (:ref:`JOBTMPL/PublishOnPyPI/Input/python_version`) and install dependencies
+      (:ref:`JOBTMPL/PublishOnPyPI/Input/requirements`), which must provide :term:`twine`.
+   3. Publish the wheel package(s) (:file:`*.whl`) to :ref:`JOBTMPL/PublishOnPyPI/Input/pypi_upload_url`.
+   4. Publish the source package(s) (:file:`*.tar.gz`). |br|
+      Steps 3 and 4 are replaced by a ``twine check`` of both package kinds if
+      :ref:`JOBTMPL/PublishOnPyPI/Input/dry_run` is enabled.
+   5. Delete the artifact (:ref:`JOBTMPL/PublishOnPyPI/Input/cleanup`).
+
+.. topic:: Preconditions
+
+   1. A PyPI account was created and the package name is either not occupied or the user has access rights for that
+      package.
+   2. An access token was generated at PyPI, which can be used for uploading packages.
+   3. A secret (e.g. ``PYPI_TOKEN``) was setup in GitHub Actions to handover the PyPI token to the pipeline.
+
+.. topic:: Job Execution
+
+   .. image:: ../../_static/pyTooling-Actions-PublishOnPyPI.png
+      :width: 500px
+
+.. topic:: Dependencies
+
+   * :gh:`actions/setup-python`
+   * :gh:`pyTooling/download-artifact`
+
+     * :gh:`actions/download-artifact`
+
+   * :gh:`geekyeggo/delete-artifact`
+   * pip
+
+     * :term:`twine` (:pypi:`PyPI package <twine>`)
+     * :term:`wheel` (:pypi:`PyPI package <wheel>`)
+
+.. _JOBTMPL/PublishOnPyPI/Instantiation:
+
+Instantiation
+*************
+
+Simple Example
+==============
+
+The following example demonstrates how to publish the artifact named ``Package`` to PyPI on every pipeline run triggered
+by a Git tag. A secret is forwarded from GitHub secrets to a job secret.
+
+.. code-block:: yaml
+
+   jobs:
+     # ...
+
+     PublishOnPyPI:
+       uses: pyTooling/Actions/.github/workflows/PublishOnPyPI.yml@r8
+       if: startsWith(github.ref, 'refs/tags')
+       with:
+         artifact: Package
+       secrets:
+         PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+
+Complex Example
+===============
+
+In this more complex example, the job depends on a parameter creation (``Params``) and packaging job (``Package``). The
+used Python version is overwritten by a parameter calculated in the ``Params`` jobs. Also the artifact name is managed
+by that job. Finally, the list of requirements is overwritten to load a list of requirements from ``dist/requirements.txt``.
+
+.. code-block:: yaml
+
+   jobs:
+     Params:
+       # ...
+
+     Package:
+       # ...
+
+     PublishOnPyPI:
+       uses: pyTooling/Actions/.github/workflows/PublishOnPyPI.yml@r8
+       if: startsWith(github.ref, 'refs/tags')
+       needs:
+         - Params
+         - Package
+       with:
+         python_version: ${{ needs.Params.outputs.python_version }}
+         requirements: -r dist/requirements.txt
+         artifact: ${{ fromJson(needs.Params.outputs.artifact_names).package_all }}
+       secrets:
+         PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+
+.. seealso::
+
+   :ref:`JOBTMPL/Package`
+
+
+.. _JOBTMPL/PublishOnPyPI/Parameters:
+
+Parameter Summary
+*****************
+
+.. rubric:: Goto :ref:`input parameters <JOBTMPL/PublishOnPyPI/Inputs>`
+
++---------------------------------------------------------+----------+--------+---------------------------------------+
+| Parameter Name                                          | Required | Type   | Default                               |
++=========================================================+==========+========+=======================================+
+| :ref:`JOBTMPL/PublishOnPyPI/Input/ubuntu_image_version` | no       | string | ``'26.04'``                           |
++---------------------------------------------------------+----------+--------+---------------------------------------+
+| :ref:`JOBTMPL/PublishOnPyPI/Input/python_version`       | no       | string | ``'3.14'``                            |
++---------------------------------------------------------+----------+--------+---------------------------------------+
+| :ref:`JOBTMPL/PublishOnPyPI/Input/requirements`         | no       | string | ``'wheel twine'``                     |
++---------------------------------------------------------+----------+--------+---------------------------------------+
+| :ref:`JOBTMPL/PublishOnPyPI/Input/artifact`             | yes      | string | — — — —                               |
++---------------------------------------------------------+----------+--------+---------------------------------------+
+| :ref:`JOBTMPL/PublishOnPyPI/Input/dry_run`              | no       | string | ``'false'``                           |
++---------------------------------------------------------+----------+--------+---------------------------------------+
+| :ref:`JOBTMPL/PublishOnPyPI/Input/pypi_upload_url`      | no       | string | ``'https://upload.pypi.org/legacy/'`` |
++---------------------------------------------------------+----------+--------+---------------------------------------+
+| :ref:`JOBTMPL/PublishOnPyPI/Input/cleanup`              | no       | string | ``'true'``                            |
++---------------------------------------------------------+----------+--------+---------------------------------------+
+
+.. rubric:: Goto :ref:`secrets <JOBTMPL/PublishOnPyPI/Secrets>`
+
++-----------------------------------------------------------+----------+----------+--------------+
+| Token Name                                                | Required | Type     | Default      |
++===========================================================+==========+==========+==============+
+| :ref:`JOBTMPL/PublishOnPyPI/Secret/PYPI_TOKEN`            | no       | string   | — — — —      |
++-----------------------------------------------------------+----------+----------+--------------+
+
+.. rubric:: Goto :ref:`output parameters <JOBTMPL/PublishOnPyPI/Outputs>`
+
+This job template has no output parameters.
+
+
+.. _JOBTMPL/PublishOnPyPI/Inputs:
+
+Input Parameters
+****************
+
+.. _JOBTMPL/PublishOnPyPI/Input/ubuntu_image_version:
+
+.. include:: ../_ubuntu_image_version.rst
+
+
+.. _JOBTMPL/PublishOnPyPI/Input/python_version:
+
+.. include:: ../_python_version.rst
+
+
+.. _JOBTMPL/PublishOnPyPI/Input/requirements:
+
+requirements
+============
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'wheel twine'``
+:Possible Values: Any valid list of parameters for ``pip install``. |br|
+                  Either a requirements file can be referenced using ``'-r path/to/requirements.txt'``, or a list of
+                  packages can be specified using a space separated list like ``'wheel twine'``.
+:Description:     Python dependencies to be installed through *pip*.
+
+
+.. _JOBTMPL/PublishOnPyPI/Input/artifact:
+
+artifact
+========
+
+:Type:            string
+:Required:        yes
+:Default Value:   — — — —
+:Possible Values: Any valid artifact name.
+:Description:     Name of the artifact containing the packaged Python package(s).
+
+
+.. _JOBTMPL/PublishOnPyPI/Input/dry_run:
+
+dry_run
+=======
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'false'``
+:Possible Values: ``'true'`` / ``'false'``
+:Description:     Validate the packages with ``twine check`` instead of uploading them to :term:`PyPI`. |br|
+                  Everything up to the upload still runs, so the artifact download, the Python setup and the package
+                  metadata are exercised - only the two ``twine upload`` calls are skipped. |br|
+                  ``'true'`` - check the packages and publish nothing. |br|
+                  ``'false'`` - publish the packages.
+
+
+.. _JOBTMPL/PublishOnPyPI/Input/pypi_upload_url:
+
+pypi_upload_url
+===============
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'https://upload.pypi.org/legacy/'``
+:Possible Values: Upload URL of a package registry, as ``twine upload --repository-url`` takes it, e.g.
+                  ``'https://test.pypi.org/legacy/'`` for TestPyPI.
+:Description:     The package registry the packages are uploaded to. |br|
+                  A registry's upload URL isn't its website: :term:`PyPI` is ``https://pypi.org``, but uploads go to
+                  ``https://upload.pypi.org/legacy/``.
+
+
+.. _JOBTMPL/PublishOnPyPI/Input/cleanup:
+
+cleanup
+=======
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'true'``
+:Possible Values: ``'true'`` / ``'false'``
+:Description:     Delete the artifact named by :ref:`JOBTMPL/PublishOnPyPI/Input/artifact` after the packages were
+                  uploaded. |br|
+                  This job consumes the artifact, so a pipeline usually has no further use for it. |br|
+                  ``'true'`` - delete the package artifact. |br|
+                  ``'false'`` - keep it.
+
+
+.. _JOBTMPL/PublishOnPyPI/Secrets:
+
+Secrets
+*******
+
+
+.. _JOBTMPL/PublishOnPyPI/Secret/PYPI_TOKEN:
+
+PYPI_TOKEN
+==========
+
+:Type:            string
+:Required:        no
+:Default Value:   — — — —
+:Description:     The token to publish and upload packages on :term:`PyPI`.
+
+
+.. _JOBTMPL/PublishOnPyPI/Outputs:
+
+Outputs
+*******
+
+This job template has no output parameters.
+
+
+.. _JOBTMPL/PublishOnPyPI/Optimizations:
+
+Optimizations
+*************
+
+This template offers no optimizations (reduced job runtime).

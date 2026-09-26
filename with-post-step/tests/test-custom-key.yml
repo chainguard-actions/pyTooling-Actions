@@ -1,0 +1,31 @@
+name: Test custom key input
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "custom-key-main" > /tmp/custom-key-output.txt'
+          post: 'echo "custom-key-post"'
+          key: MY_CUSTOM_KEY
+
+      - name: Assert main command ran with custom key
+        run: |
+          if [ ! -f /tmp/custom-key-output.txt ]; then
+            echo "FAIL: main command did not create output file"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/custom-key-output.txt)
+          echo "content: $CONTENT"
+          if [ "$CONTENT" != "custom-key-main" ]; then
+            echo "FAIL: expected 'custom-key-main' but got '$CONTENT'"
+            exit 1
+          fi
+          echo "PASS: main command ran successfully with custom key"
