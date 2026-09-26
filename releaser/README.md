@@ -179,3 +179,7 @@ For prototyping purposes, the following job might be useful:
 ```
 
 Find a non-trivial use case at [msys2/msys2-autobuild](https://github.com/msys2/msys2-autobuild).
+
+## Privacy
+
+This Action contacts Chainguard's licensing server to verify authorization. Connection metadata (IP address, GitHub repository identifier, timestamp, and any metadata encoded in the auth token) is transmitted to Chainguard, Inc. even if authorization is denied in accordance with our [Privacy Notice](https://www.chainguard.dev/legal/privacy-notice)

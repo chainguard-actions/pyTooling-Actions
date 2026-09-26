@@ -42,4 +42,4 @@ inputs:
     default: true
 runs:
   using: 'docker'
-  image: 'docker://ghcr.io/pytooling/releaser:latest@sha256:6137404904edef5409e084b88e1ab33f52db02aa39ac2c5f488a768337555099'
+  image: 'docker://ghcr.io/pytooling/releaser@sha256:6137404904edef5409e084b88e1ab33f52db02aa39ac2c5f488a768337555099'

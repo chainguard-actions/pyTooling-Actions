@@ -14,29 +14,29 @@ Action **pyTooling--Actions--releaser/v4.2.2** was hardened automatically. 2 fin
 
 ## Findings Fixed
 
-### unpinned-uses (severity: high)
-
-The docker action in action.yml references the image 'docker://ghcr.io/pytooling/releaser' with no tag and no SHA digest. This is a fully mutable reference — any update to the image on the registry will silently change what code runs, enabling supply-chain attacks. The image must be pinned to a SHA digest, e.g. 'ghcr.io/pytooling/releaser@sha256:<64-hex-char-digest>'.
-
-Locations:
-
-- `action.yml:47`
-
 ### script-injection (severity: high)
 
-Sub-rule (a): A ${{ }} expression is directly interpolated inside a run: shell command string in composite/action.yml. The offending line is: `run: '''${{ github.action_path }}/../releaser.py'''`. Any ${{ ... }} expression interpolated directly into a run: block is a script-injection risk because the value is substituted into the shell command string before the shell parses it. Even though github.action_path is not directly attacker-controlled, the pattern is unsafe and must be replaced with an env: variable reference, e.g. set `ACTION_PATH: ${{ github.action_path }}` in the env: block and use `"$ACTION_PATH/../releaser.py"` in the run: script.
+Sub-rule (a): A ${{ }} expression is directly interpolated inside a run: shell command string in composite/action.yml. The offending line is: `run: '''${{ github.action_path }}/../releaser.py'''`. Any ${{ ... }} expression inside a run: block is a script-injection risk because YAML template substitution occurs before the shell ever sees the value, bypassing shell quoting. The fix is to use the pre-set environment variable $GITHUB_ACTION_PATH instead: `run: '''$GITHUB_ACTION_PATH/../releaser.py'''`.
 
 Locations:
 
-- `composite/action.yml:55`
+- `composite/action.yml:53`
+
+### unpinned-uses (severity: high)
+
+The Docker action in action.yml references a mutable image with no tag and no SHA digest: `image: 'docker://ghcr.io/pytooling/releaser'`. This image reference can be silently replaced at any time, enabling a supply-chain attack. It must be pinned to a specific SHA digest, e.g. `image: 'docker://ghcr.io/pytooling/releaser@sha256:<64-hex-char-digest>'`.
+
+Locations:
+
+- `action.yml:43`
 
 ## Iteration Notes
 
 ### Iteration 1
 
-**Fixes applied:** unpinned-uses, script-injection
+**Fixes applied:** script-injection, unpinned-uses
 
 **Notes:**
 
-1. action.yml: Pinned docker image from 'docker://ghcr.io/pytooling/releaser' (no tag, no digest) to 'docker://ghcr.io/pytooling/releaser:latest@sha256:6137404904edef5409e084b88e1ab33f52db02aa39ac2c5f488a768337555099', preserving the docker:// scheme and including the tag inline. 2. composite/action.yml: Moved ${{ github.action_path }} out of the run: shell command string into the step's env: block as ACTION_PATH, and updated the run: script to reference it as "$ACTION_PATH/../releaser.py" to eliminate the script-injection risk.
+1. Fixed script injection in composite/action.yml (line 53): replaced `${{ github.action_path }}` with `$GITHUB_ACTION_PATH` to use the pre-set environment variable instead of YAML template substitution. 2. Fixed unpinned Docker image in action.yml (line 43): pinned `docker://ghcr.io/pytooling/releaser` to `docker://ghcr.io/pytooling/releaser@sha256:6137404904edef5409e084b88e1ab33f52db02aa39ac2c5f488a768337555099`, preserving the `docker://` scheme.
 
