@@ -1,0 +1,444 @@
+.. _JOBTMPL/StaticTypeCheck:
+.. index::
+   single: mypy; StaticTypeCheck Template
+   single: GitHub Action Reusable Workflow; StaticTypeCheck Template
+
+StaticTypeCheck
+###############
+
+This job template runs a static type check using :term:`mypy` and collects the results. These results can be converted
+to a HTML report and uploaded as an artifact.
+
+.. topic:: Features
+
+   * Run static type check using :term:`mypy`.
+
+.. topic:: Behavior
+
+   1. Checkout repository.
+   2. Setup Python (:ref:`JOBTMPL/StaticTypeCheck/Input/python_version`) and install the Python dependencies
+      (:ref:`JOBTMPL/StaticTypeCheck/Input/requirements`), which must provide :term:`mypy`.
+   3. Run the static type check (:ref:`JOBTMPL/StaticTypeCheck/Input/mypy_options`) in
+      :ref:`JOBTMPL/StaticTypeCheck/Input/root_directory`.
+   4. Upload the HTML report as an artifact (:ref:`JOBTMPL/StaticTypeCheck/Input/html_artifact`,
+      :ref:`JOBTMPL/StaticTypeCheck/Input/html_report`).
+   5. Upload the JUnit XML report as an artifact (:ref:`JOBTMPL/StaticTypeCheck/Input/junit_artifact`,
+      :ref:`JOBTMPL/StaticTypeCheck/Input/junit_report`).
+   6. Upload the Cobertura XML report as an artifact (:ref:`JOBTMPL/StaticTypeCheck/Input/cobertura_artifact`,
+      :ref:`JOBTMPL/StaticTypeCheck/Input/cobertura_report`).
+
+   Each upload runs only if the corresponding artifact parameter is non-empty.
+
+.. topic:: Job Execution
+
+   .. image:: ../../_static/pyTooling-Actions-StaticTypeCheck.png
+      :width: 400px
+
+.. topic:: Dependencies
+
+   * :gh:`actions/checkout`
+   * :gh:`actions/setup-python`
+   * :gh:`pyTooling/upload-artifact`
+
+     * :gh:`actions/upload-artifact`
+
+   * pip
+
+     * Python packages specified via :ref:`JOBTMPL/StaticTypeCheck/Input/requirements` parameter. This is where
+       :term:`mypy` (:pypi:`PyPI package <mypy>`) comes from - the job template installs nothing itself.
+
+.. _JOBTMPL/StaticTypeCheck/Instantiation:
+
+Instantiation
+*************
+
+Simple Example
+==============
+
+This example runs mypy for the Python package ``myPackage`` according to the configuration stored in
+:file:`pyproject.toml`. It prints a report into the job's log. In addition is generates a report in HTML format into the
+directory ``report/typing``.
+
+.. grid:: 2
+
+   .. grid-item::
+      :columns: 6
+
+      .. code-block:: yaml
+
+         jobs:
+           StaticTypeCheck:
+             uses: pyTooling/Actions/.github/workflows/StaticTypeCheck.yml@r8
+             with:
+               cobertura_artifact: 'TypeChecking-Cobertura'
+               junit_artifact:     'TypeChecking-JUnit'
+               html_artifact:      'TypeChecking-HTML'
+
+   .. grid-item::
+      :columns: 6
+
+      .. code-block:: toml
+
+         [tool.mypy]
+         packages = ["myPackage"]
+         strict = true
+         pretty = true
+
+         html_report = "report/typing/html"
+         junit_xml = "report/typing/StaticTypingSummary.xml"
+         cobertura_xml_report = "report/typing"
+
+
+Complex Example
+===============
+
+To ease the handling of mypy parameters stored in :file:`pyproject.toml`, the :ref:`JOBTMPL/ExtractConfiguration` is
+used to extract the set configuration parameters for later usage. Similarly, :ref:`JOBTMPL/Parameters` is used to
+precompute the artifact's name.
+
+.. code-block:: yaml
+
+   jobs:
+     ConfigParams:
+       uses: pyTooling/Actions/.github/workflows/ExtractConfiguration.yml@r8
+       with:
+         package_name: myPackage
+
+     Params:
+       uses: pyTooling/Actions/.github/workflows/Parameters.yml@r8
+       with:
+         package_name: myPackage
+
+     StaticTypeCheck:
+       uses: pyTooling/Actions/.github/workflows/StaticTypeCheck.yml@r8
+       needs:
+         - ConfigParams
+         - Params
+       with:
+         python_version: ${{ needs.Params.outputs.python_version }}
+         junit_report:   ${{ needs.ConfigParams.outputs.typing_report_junit }}
+         junit_artifact: ${{ fromJson(needs.Params.outputs.artifact_names).statictyping_junit }}
+
+
+.. _JOBTMPL/StaticTypeCheck/Parameters:
+
+Parameter Summary
+*****************
+
+.. rubric:: Goto :ref:`input parameters <JOBTMPL/StaticTypeCheck/Inputs>`
+
++-----------------------------------------------------------+----------+---------------+----------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter Name                                            | Required | Type          | Default                                                                                                                                |
++===========================================================+==========+===============+========================================================================================================================================+
+| :ref:`JOBTMPL/StaticTypeCheck/Input/ubuntu_image_version` | no       | string        | ``'26.04'``                                                                                                                            |
++-----------------------------------------------------------+----------+---------------+----------------------------------------------------------------------------------------------------------------------------------------+
+| :ref:`JOBTMPL/StaticTypeCheck/Input/python_version`       | no       | string        | ``'3.14'``                                                                                                                             |
++-----------------------------------------------------------+----------+---------------+----------------------------------------------------------------------------------------------------------------------------------------+
+| :ref:`JOBTMPL/StaticTypeCheck/Input/requirements`         | no       | string        | ``'-r ./requirements.txt'``                                                                                                            |
++-----------------------------------------------------------+----------+---------------+----------------------------------------------------------------------------------------------------------------------------------------+
+| :ref:`JOBTMPL/StaticTypeCheck/Input/mypy_options`         | no       | string        | ``''``                                                                                                                                 |
++-----------------------------------------------------------+----------+---------------+----------------------------------------------------------------------------------------------------------------------------------------+
+| :ref:`JOBTMPL/StaticTypeCheck/Input/root_directory`       | no       | string        | ``'.'``                                                                                                                                |
++-----------------------------------------------------------+----------+---------------+----------------------------------------------------------------------------------------------------------------------------------------+
+| :ref:`JOBTMPL/StaticTypeCheck/Input/tests_directory`      | no       | string        | ``'tests'``                                                                                                                            |
++-----------------------------------------------------------+----------+---------------+----------------------------------------------------------------------------------------------------------------------------------------+
+| :ref:`JOBTMPL/StaticTypeCheck/Input/typing_directory`     | no       | string        | ``'typing'``                                                                                                                           |
++-----------------------------------------------------------+----------+---------------+----------------------------------------------------------------------------------------------------------------------------------------+
+| :ref:`JOBTMPL/StaticTypeCheck/Input/cobertura_report`     | no       | string (JSON) | :jsoncode:`{"fullpath": "report/typing/cobertura.xml", "directory": "report/typing", "filename": "cobertura.xml"}`                     |
++-----------------------------------------------------------+----------+---------------+----------------------------------------------------------------------------------------------------------------------------------------+
+| :ref:`JOBTMPL/StaticTypeCheck/Input/junit_report`         | no       | string (JSON) | :jsoncode:`{"fullpath": "report/typing/StaticTypingSummary.xml", "directory": "report/typing", "filename": "StaticTypingSummary.xml"}` |
++-----------------------------------------------------------+----------+---------------+----------------------------------------------------------------------------------------------------------------------------------------+
+| :ref:`JOBTMPL/StaticTypeCheck/Input/html_report`          | no       | string (JSON) | :jsoncode:`{"directory": "report/typing/html"}`                                                                                        |
++-----------------------------------------------------------+----------+---------------+----------------------------------------------------------------------------------------------------------------------------------------+
+| :ref:`JOBTMPL/StaticTypeCheck/Input/cobertura_artifact`   | no       | string        | ``''``                                                                                                                                 |
++-----------------------------------------------------------+----------+---------------+----------------------------------------------------------------------------------------------------------------------------------------+
+| :ref:`JOBTMPL/StaticTypeCheck/Input/junit_artifact`       | no       | string        | ``''``                                                                                                                                 |
++-----------------------------------------------------------+----------+---------------+----------------------------------------------------------------------------------------------------------------------------------------+
+| :ref:`JOBTMPL/StaticTypeCheck/Input/html_artifact`        | no       | string        | ``''``                                                                                                                                 |
++-----------------------------------------------------------+----------+---------------+----------------------------------------------------------------------------------------------------------------------------------------+
+
+.. rubric:: Goto :ref:`secrets <JOBTMPL/StaticTypeCheck/Secrets>`
+
+This job template needs no secrets.
+
+.. rubric:: Goto :ref:`output parameters <JOBTMPL/StaticTypeCheck/Outputs>`
+
+This job template has no output parameters.
+
+
+.. _JOBTMPL/StaticTypeCheck/Inputs:
+
+Input Parameters
+****************
+
+.. _JOBTMPL/StaticTypeCheck/Input/ubuntu_image_version:
+
+.. include:: ../_ubuntu_image_version.rst
+
+
+.. _JOBTMPL/StaticTypeCheck/Input/python_version:
+
+.. include:: ../_python_version.rst
+
+
+.. _JOBTMPL/StaticTypeCheck/Input/requirements:
+
+requirements
+============
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'-r ./requirements.txt'``
+:Possible Values: Any valid list of parameters for ``pip install``. |br|
+                  Either a requirements file can be referenced using ``'-r path/to/requirements.txt'``, or a list of
+                  packages can be specified using a space separated list like ``'mypy lxml'``.
+:Description:     Python dependencies to be installed through *pip*.
+
+                  A requirements file is looked up in one of two ways, depending on the path:
+
+                  * A path starting with ``./`` is resolved relative to the static typing directory, which is the
+                    concatenation of :ref:`JOBTMPL/StaticTypeCheck/Input/root_directory`,
+                    :ref:`JOBTMPL/StaticTypeCheck/Input/tests_directory` and
+                    :ref:`JOBTMPL/StaticTypeCheck/Input/typing_directory`. |br|
+                    With the defaults, ``'-r ./requirements.txt'`` refers to :file:`./tests/typing/requirements.txt`.
+                  * Any other path is used as given, thus relative to the repository root.
+
+                  .. attention::
+
+                     The resolved file's existence is checked before the installation. If it is missing, the job is
+                     aborted with a ``FileNotFoundError`` annotation naming the resolved path.
+
+
+.. _JOBTMPL/StaticTypeCheck/Input/mypy_options:
+
+mypy_options
+============
+
+:Type:            string
+:Required:        no
+:Default Value:   ``''``
+:Possible Values: Any valid command line options for :term:`mypy`.
+:Description:     Additional options handed over to mypy as ``mypy ${mypy_options}``.
+
+
+.. _JOBTMPL/StaticTypeCheck/Input/root_directory:
+
+root_directory
+==============
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'.'``
+:Possible Values: Any valid directory path relative to the repository root.
+:Description:     Working directory for running :term:`mypy`. |br|
+                  It is also the first part of the directory a ``./``-prefixed
+                  :ref:`JOBTMPL/StaticTypeCheck/Input/requirements` is resolved against.
+
+                  .. attention::
+
+                     The report paths (:ref:`JOBTMPL/StaticTypeCheck/Input/cobertura_report`,
+                     :ref:`JOBTMPL/StaticTypeCheck/Input/junit_report`,
+                     :ref:`JOBTMPL/StaticTypeCheck/Input/html_report`) are written by mypy relative to this
+                     directory, but uploaded relative to the repository root. With a non-default value, both have
+                     to account for it.
+
+
+.. _JOBTMPL/StaticTypeCheck/Input/tests_directory:
+
+tests_directory
+===============
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'tests'``
+:Possible Values: Any valid directory path relative to
+                  :ref:`JOBTMPL/StaticTypeCheck/Input/root_directory`.
+:Description:     Path to the directory containing tests. |br|
+                  Used only to resolve a ``./``-prefixed :ref:`JOBTMPL/StaticTypeCheck/Input/requirements`.
+
+
+.. _JOBTMPL/StaticTypeCheck/Input/typing_directory:
+
+typing_directory
+================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'typing'``
+:Possible Values: Any valid directory path relative to
+                  :ref:`JOBTMPL/StaticTypeCheck/Input/tests_directory`.
+:Description:     Path to the directory containing the static type checking tests. |br|
+                  Used only to resolve a ``./``-prefixed :ref:`JOBTMPL/StaticTypeCheck/Input/requirements`.
+
+
+.. _JOBTMPL/StaticTypeCheck/Input/cobertura_report:
+
+cobertura_report
+================
+
+:Type:            string (JSON)
+:Required:        no
+:Default Value:
+                  .. code-block:: json
+
+                     { "directory": "report/typing",
+                       "filename":  "cobertura.xml",
+                       "fullpath":  "report/typing/cobertura.xml"
+                     }
+:Possible Values: Any valid JSON string containing a JSON object with fields:
+
+                  :directory: Directory or sub-directory where the type checking report in Cobertura XML format will be
+                              saved.
+                  :filename:  Filename of the generated type checking report in Cobertura XML format. |br|
+                              Currently, this filename is hardcoded within :term:`mypy` as :file:`cobertura.xml`.
+                  :fullpath:  The concatenation of both previous fields using the ``/`` separator.
+:Description:     Directory, filename and fullpath as JSON object where the type checking report in Cobertura XML format
+                  will be saved. |br|
+                  This path is configured in :file:`pyproject.toml` and can be extracted by
+                  :ref:`JOBTMPL/ExtractConfiguration`.
+:Example:
+                  .. code-block:: yaml
+
+                     ConfigParams:
+                       uses: pyTooling/Actions/.github/workflows/ExtractConfiguration.yml@r8
+
+                     UnitTesting:
+                       uses: pyTooling/Actions/.github/workflows/StaticTypeCheck.yml@r8
+                       needs:
+                         - ConfigParams
+                       with:
+                         ...
+                         cobertura_report: ${{ needs.ConfigParams.outputs.statictyping_cobertura }}
+
+
+.. _JOBTMPL/StaticTypeCheck/Input/junit_report:
+
+junit_report
+============
+
+:Type:            string (JSON)
+:Required:        no
+:Default Value:
+                  .. code-block:: json
+
+                     { "directory": "report/typing",
+                       "filename":  "StaticTypingSummary.xml",
+                       "fullpath":  "report/typing/StaticTypingSummary.xml"
+                     }
+:Possible Values: Any valid JSON string containing a JSON object with fields:
+
+                  :directory: Directory or sub-directory where the type checking report in JUnit XML format will be
+                              saved.
+                  :filename:  Filename of the generated type checking report in JUnit XML format. |br|
+                              Any valid file name for mypy's JUnit XML report.
+                  :fullpath:  The concatenation of both previous fields using the ``/`` separator.
+:Description:     Directory, filename and fullpath as JSON object where the type checking report in JUnit XML format
+                  will be saved. |br|
+                  This path is configured in :file:`pyproject.toml` and can be extracted by
+                  :ref:`JOBTMPL/ExtractConfiguration`.
+:Example:
+                  .. code-block:: yaml
+
+                     ConfigParams:
+                       uses: pyTooling/Actions/.github/workflows/ExtractConfiguration.yml@r8
+
+                     UnitTesting:
+                       uses: pyTooling/Actions/.github/workflows/StaticTypeCheck.yml@r8
+                       needs:
+                         - ConfigParams
+                       with:
+                         ...
+                         junit_report: ${{ needs.ConfigParams.outputs.statictyping_junit }}
+
+
+.. _JOBTMPL/StaticTypeCheck/Input/html_report:
+
+html_report
+===========
+
+:Type:            string (JSON)
+:Required:        no
+:Default Value:
+                  .. code-block:: json
+
+                     { "directory": "report/typing/html"
+                     }
+:Possible Values: Any valid JSON string containing a JSON object with fields:
+
+                  :directory: Directory or sub-directory where the type checking report in HTML format will be saved.
+:Description:     Directory as JSON object where the type checking report in HTML format will be saved. |br|
+                  This path is configured in :file:`pyproject.toml` and can be extracted by
+                  :ref:`JOBTMPL/ExtractConfiguration`.
+:Example:
+                  .. code-block:: yaml
+
+                     ConfigParams:
+                       uses: pyTooling/Actions/.github/workflows/ExtractConfiguration.yml@r8
+
+                     UnitTesting:
+                       uses: pyTooling/Actions/.github/workflows/StaticTypeCheck.yml@r8
+                       needs:
+                         - ConfigParams
+                       with:
+                         ...
+                         html_report: ${{ needs.ConfigParams.outputs.statictyping_html }}
+
+
+.. _JOBTMPL/StaticTypeCheck/Input/cobertura_artifact:
+
+cobertura_artifact
+==================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``''``
+:Possible Values: Any valid artifact name.
+:Description:     Name of the artifact containing the Cobertura XML report.
+
+
+.. _JOBTMPL/StaticTypeCheck/Input/junit_artifact:
+
+junit_artifact
+==============
+
+:Type:            string
+:Required:        no
+:Default Value:   ``''``
+:Possible Values: Any valid artifact name.
+:Description:     Name of the artifact containing the JUnit XML report.
+
+
+.. _JOBTMPL/StaticTypeCheck/Input/html_artifact:
+
+html_artifact
+=============
+
+:Type:            string
+:Required:        no
+:Default Value:   ``''``
+:Possible Values: Any valid artifact name.
+:Description:     Name of the artifact containing the HTML report.
+
+
+.. _JOBTMPL/StaticTypeCheck/Secrets:
+
+Secrets
+*******
+
+This job template needs no secrets.
+
+
+.. _JOBTMPL/StaticTypeCheck/Outputs:
+
+Outputs
+*******
+
+This job template has no output parameters.
+
+
+.. _JOBTMPL/StaticTypeCheck/Optimizations:
+
+Optimizations
+*************
+
+This template offers no optimizations (reduced job runtime).

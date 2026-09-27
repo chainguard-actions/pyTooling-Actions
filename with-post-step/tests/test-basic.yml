@@ -1,0 +1,42 @@
+name: Test basic usage - main step runs main command
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare state file and output file
+        run: |
+          STATE_FILE="/tmp/github_state_basic_$$"
+          touch "$STATE_FILE"
+          echo "GITHUB_STATE=$STATE_FILE" >> "$GITHUB_ENV"
+          rm -f /tmp/main_ran.txt
+          echo "State file: $STATE_FILE"
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "MAIN_STEP_EXECUTED" > /tmp/main_ran.txt'
+          post: 'echo "POST_STEP_EXECUTED" > /tmp/post_ran.txt'
+          key: POST
+
+      - name: Assert main command ran
+        run: |
+          echo "Checking if main command ran..."
+          if [ -f /tmp/main_ran.txt ]; then
+            RESULT=$(cat /tmp/main_ran.txt)
+            echo "main_ran.txt contents: $RESULT"
+            if echo "$RESULT" | grep -q "MAIN_STEP_EXECUTED"; then
+              echo "PASS: main command ran successfully"
+            else
+              echo "FAIL: unexpected content in main_ran.txt: $RESULT"
+              exit 1
+            fi
+          else
+            echo "FAIL: /tmp/main_ran.txt not found — main command did not run"
+            exit 1
+          fi

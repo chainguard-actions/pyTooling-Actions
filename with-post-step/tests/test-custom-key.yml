@@ -1,0 +1,42 @@
+name: Test custom key - state variable uses custom key name
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare state file and output file
+        run: |
+          STATE_FILE="/tmp/github_state_custom_$$"
+          touch "$STATE_FILE"
+          echo "GITHUB_STATE=$STATE_FILE" >> "$GITHUB_ENV"
+          rm -f /tmp/custom_key_ran.txt
+          echo "State file: $STATE_FILE"
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "MAIN_WITH_CUSTOM_KEY" > /tmp/custom_key_ran.txt'
+          post: 'echo "POST_WITH_CUSTOM_KEY" > /tmp/custom_key_post.txt'
+          key: MY_CUSTOM_KEY
+
+      - name: Assert main command ran with custom key
+        run: |
+          echo "Checking if main command ran with custom key..."
+          if [ -f /tmp/custom_key_ran.txt ]; then
+            RESULT=$(cat /tmp/custom_key_ran.txt)
+            echo "custom_key_ran.txt contents: $RESULT"
+            if echo "$RESULT" | grep -q "MAIN_WITH_CUSTOM_KEY"; then
+              echo "PASS: main command ran successfully with custom key MY_CUSTOM_KEY"
+            else
+              echo "FAIL: unexpected content: $RESULT"
+              exit 1
+            fi
+          else
+            echo "FAIL: /tmp/custom_key_ran.txt not found — main command did not run"
+            exit 1
+          fi

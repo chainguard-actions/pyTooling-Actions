@@ -1,0 +1,41 @@
+name: Test post step - post command runs when state variable is set
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare output file
+        run: |
+          rm -f /tmp/branch_result.txt
+          echo "Output file cleared"
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "MAIN_BRANCH" > /tmp/branch_result.txt'
+          post: 'echo "POST_BRANCH" > /tmp/branch_result.txt'
+          key: POST
+        env:
+          STATE_POST: "true"
+
+      - name: Assert post command ran (STATE_POST was set, so post branch taken)
+        run: |
+          echo "Checking which branch was executed..."
+          if [ -f /tmp/branch_result.txt ]; then
+            RESULT=$(cat /tmp/branch_result.txt)
+            echo "Branch result: $RESULT"
+            if echo "$RESULT" | grep -q "POST_BRANCH"; then
+              echo "PASS: POST_BRANCH was executed (post step ran)"
+            else
+              echo "FAIL: expected POST_BRANCH but got: $RESULT"
+              exit 1
+            fi
+          else
+            echo "FAIL: /tmp/branch_result.txt not found — neither branch ran"
+            exit 1
+          fi
