@@ -1,0 +1,43 @@
+name: Test custom key name
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "custom key main step" > /tmp/custom-key-ran.txt'
+          post: 'echo "custom key post step"'
+          key: MY_CUSTOM_KEY
+
+      - name: Assert action step succeeded with custom key
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected action to succeed with custom key, got: $OUTCOME"
+            exit 1
+          fi
+          echo "PASS: action succeeded with custom key"
+
+      - name: Assert main command ran with custom key
+        run: |
+          if [ ! -f /tmp/custom-key-ran.txt ]; then
+            echo "FAIL: /tmp/custom-key-ran.txt not found"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/custom-key-ran.txt)
+          echo "content: $CONTENT"
+          if echo "$CONTENT" | grep -q "custom key main step"; then
+            echo "PASS: main command ran with custom key"
+          else
+            echo "FAIL: expected 'custom key main step' in output, got: $CONTENT"
+            exit 1
+          fi

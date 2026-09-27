@@ -1,0 +1,45 @@
+name: Test basic usage - main command runs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create output file for main command
+        run: echo "" > /tmp/main-ran.txt
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "main step executed" > /tmp/main-ran.txt'
+          post: 'echo "post step executed"'
+
+      - name: Assert main command ran
+        run: |
+          if [ ! -f /tmp/main-ran.txt ]; then
+            echo "FAIL: /tmp/main-ran.txt not found"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/main-ran.txt)
+          echo "content: $CONTENT"
+          if echo "$CONTENT" | grep -q "main step executed"; then
+            echo "PASS: main command ran successfully"
+          else
+            echo "FAIL: expected 'main step executed' in output, got: $CONTENT"
+            exit 1
+          fi
+
+      - name: Assert action step succeeded
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected action to succeed, got: $OUTCOME"
+            exit 1
+          fi
+          echo "PASS"
