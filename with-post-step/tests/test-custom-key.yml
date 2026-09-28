@@ -1,0 +1,31 @@
+name: Test custom key name
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare output file
+        run: |
+          rm -f /tmp/custom-key-main.txt
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "custom key main ran" > /tmp/custom-key-main.txt'
+          post: 'echo "custom key post ran"'
+          key: MY_CUSTOM_KEY
+
+      - name: Assert main command ran with custom key
+        run: |
+          CONTENT="$(cat /tmp/custom-key-main.txt 2>/dev/null || echo '')"
+          echo "main output: $CONTENT"
+          if ! echo "$CONTENT" | grep -q "custom key main ran"; then
+            echo "FAIL: main command did not run with custom key"
+            exit 1
+          fi
+          echo "PASS: main command ran successfully with custom key"

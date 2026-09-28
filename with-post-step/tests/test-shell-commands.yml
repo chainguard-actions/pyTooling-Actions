@@ -1,0 +1,39 @@
+name: Test shell commands in main and post
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare output file
+        run: |
+          rm -f /tmp/shell-main-out.txt
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "step1" >> /tmp/shell-main-out.txt && echo "step2" >> /tmp/shell-main-out.txt && echo "step3" >> /tmp/shell-main-out.txt'
+          post: 'echo "post cleanup done"'
+
+      - name: Assert all shell command steps ran
+        run: |
+          CONTENT="$(cat /tmp/shell-main-out.txt 2>/dev/null || echo '')"
+          echo "shell output:"
+          echo "$CONTENT"
+          if ! echo "$CONTENT" | grep -q "step1"; then
+            echo "FAIL: step1 not found in output"
+            exit 1
+          fi
+          if ! echo "$CONTENT" | grep -q "step2"; then
+            echo "FAIL: step2 not found in output"
+            exit 1
+          fi
+          if ! echo "$CONTENT" | grep -q "step3"; then
+            echo "FAIL: step3 not found in output"
+            exit 1
+          fi
+          echo "PASS: all shell command steps ran successfully"

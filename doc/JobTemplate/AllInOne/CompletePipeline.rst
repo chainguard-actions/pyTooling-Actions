@@ -1,0 +1,1153 @@
+.. _JOBTMPL/CompletePipeline:
+.. index::
+   single: build; CompletePipeline Template
+   single: Bandit; CompletePipeline Template
+   single: CodeCov; CompletePipeline Template
+   single: Codacy; CompletePipeline Template
+   single: Coverage.py; CompletePipeline Template
+   single: docstr_coverage; CompletePipeline Template
+   single: GitHub Pages; CompletePipeline Template
+   single: interrogate; CompletePipeline Template
+   single: MikTeX; CompletePipeline Template
+   single: mypy; CompletePipeline Template
+   single: PyPI; CompletePipeline Template
+   single: pip; CompletePipeline Template
+   single: pylint; CompletePipeline Template
+   single: radon; CompletePipeline Template
+   single: wheel; CompletePipeline Template
+   single: delete-artifact; CompletePipeline Template
+   single: pytest; CompletePipeline Template
+   single: pyEDAA.Reports; CompletePipeline Template
+   single: Sphinx; CompletePipeline Template
+   single: Test Reporter; CompletePipeline Template
+   single: twine; CompletePipeline Template
+   single: GitHub Action Reusable Workflow; CompletePipeline Template
+
+CompletePipeline
+################
+
+The ``CompletePipeline`` job template is the combination of almost all job templates offered by pyTooling/Actions in a
+single workflow template. If fulfills all needs to test, package, document, publish and release Python code from GitHub.
+It can be used for simple Python packages as well as namespace packages.
+
+.. topic:: Features
+
+   .. grid:: 3
+
+      .. grid-item::
+         :columns: 4
+
+         .. rubric:: Testing
+
+         * Run unit tests before packaging using :term:`pytest`.
+         * Run platform tests before packaging using :term:`pytest`.
+         * Run application tests using packaged code on target platform.
+
+         .. rubric:: Code Quality
+
+         * Collect code coverage using :term:`Coverage.py`.
+         * Check documentation coverage using :term:`docstr_coverage` and :term:`interrogate`.
+         * Check static typing closure using :term:`mypy`.
+         * Static Application Security Testing (SAST) using :term:`bandit`
+
+         .. rubric:: Report Handling
+
+         * Merge unit test results into one report using :term:`pyEDAA.Reports`.
+         * Merge code coverage results into one report using :term:`Coverage.py`.
+
+      .. grid-item::
+         :columns: 4
+
+         .. rubric:: Documentation
+
+         * Compile documentation using :term:`Sphinx` as HTML and LaTeX.
+         * Translate LaTeX documentation to PDF using :term:`MikTeX`.
+
+         .. rubric:: Publishing Results
+
+         * GitHub Pipeline Summary
+
+           * Publish unittest results using :term:`Test Reporter`.
+
+         * :term:`GitHub Pages`
+
+           * Publish HTML documentation to GitHub Pages.
+
+         * :term:`Codecov`
+
+           * Publish code coverage to CodeCov.
+           * Publish unittest results to CodeCov.
+
+         * :term:`Codacy`
+
+           * Publish code coverage to Codacy.
+
+      .. grid-item::
+         :columns: 4
+
+         .. rubric:: Packaging
+
+         * Package as wheel using :term:`build`.
+         * Install wheel on target platform using pip.
+         * Upload to PyPI using :term:`twine`.
+
+         .. rubric:: Releasing
+
+         * Automatic tagging of merge commits on main branch to trigger a tagged pipeline (release pipeline).
+         * Create a release page with text derived from pull request description.
+
+.. topic:: Behavior
+
+   .. include:: _Behavior.rst
+
+   .. seealso::
+
+      :ref:`DEV/ConditionalJobs`
+        How a disabled - and therefore skipped - job influences the other jobs of a pipeline.
+
+
+.. topic:: Pipeline Graph
+
+   .. image:: ../../_static/pyTooling-Actions-SimplePackage.png
+
+.. topic:: Dependencies
+
+   .. dropdown:: Expand List
+      :animate: fade-in-slide-down
+      :icon: codescan
+      :color: muted
+
+      .. grid:: 2
+
+         .. grid-item::
+            :columns: 6
+
+            * :ref:`pyTooling/Actions/.github/workflows/PrepareJob.yml <JOBTMPL/PrepareJob>`
+
+              * :gh:`actions/checkout`
+              * :gh:`GitHub command line tool 'gh' <cli/cli>`
+
+            * :ref:`pyTooling/Actions/.github/workflows/Parameters.yml <JOBTMPL/Parameters>`
+            * :ref:`pyTooling/Actions/.github/workflows/ExtractConfiguration.yml <JOBTMPL/ExtractConfiguration>`
+
+              * :gh:`actions/checkout`
+              * :gh:`actions/setup-python`
+
+                * :term:`wheel` (:pypi:`PyPI package <wheel>`)
+
+            * :ref:`pyTooling/Actions/.github/workflows/UnitTesting.yml <JOBTMPL/UnitTesting>`
+
+              * :gh:`actions/checkout`
+              * :gh:`msys2/setup-msys2`
+              * :gh:`actions/setup-python`
+              * :gh:`pyTooling/download-artifact`
+
+                * :gh:`actions/download-artifact`
+
+              * :gh:`pyTooling/upload-artifact`
+
+                * :gh:`actions/upload-artifact`
+
+              * apt: Packages specified via :ref:`JOBTMPL/UnitTesting/Input/apt` parameter.
+              * homebrew: Packages specified via :ref:`JOBTMPL/UnitTesting/Input/brew` parameter.
+              * MSYS2: Packages specified via :ref:`JOBTMPL/UnitTesting/Input/pacboy` parameter.
+              * pip
+
+                * :term:`wheel` (:pypi:`PyPI package <wheel>`)
+                * Python packages specified via :ref:`JOBTMPL/UnitTesting/Input/requirements` or
+                  :ref:`JOBTMPL/UnitTesting/Input/mingw_requirements` parameter.
+
+            * :ref:`pyTooling/Actions/.github/workflows/ApplicationTesting.yml <JOBTMPL/ApplicationTesting>`
+
+              * :gh:`actions/checkout`
+              * :gh:`msys2/setup-msys2`
+              * :gh:`actions/setup-python`
+              * :gh:`pyTooling/download-artifact`
+
+                * :gh:`actions/download-artifact`
+
+              * :gh:`pyTooling/upload-artifact`
+
+                * :gh:`actions/upload-artifact`
+
+            * :ref:`pyTooling/Actions/.github/workflows/CheckDocumentation.yml <JOBTMPL/CheckDocumentation>`
+
+              * :gh:`actions/checkout`
+              * :gh:`actions/setup-python`
+              * pip
+
+                * :term:`docstr_coverage` (:pypi:`PyPI package <docstr_coverage>`)
+                * :term:`interrogate` (:pypi:`PyPI package <interrogate>`)
+
+            * :ref:`pyTooling/Actions/.github/workflows/StaticTypeCheck.yml <JOBTMPL/StaticTypeCheck>`
+
+              * :gh:`actions/checkout`
+              * :gh:`actions/setup-python`
+              * :gh:`pyTooling/upload-artifact`
+
+                * :gh:`actions/upload-artifact`
+
+              * pip
+
+                * :term:`mypy` (:pypi:`PyPI package <mypy>`)
+
+            * :ref:`pyTooling/Actions/.github/workflows/CheckCodeQuality.yml <JOBTMPL/CheckCodeQuality>`
+
+              * :gh:`actions/checkout`
+              * :gh:`actions/setup-python`
+              * :gh:`dorny/test-reporter`
+              * pip
+
+                * :term:`bandit` (:pypi:`PyPI package <bandit>`)
+                * :term:`radon` (:pypi:`PyPI package <radon>`)
+                * :term:`pylint` (:pypi:`PyPI package <pylint>`)
+
+            * :ref:`pyTooling/Actions/.github/workflows/Package.yml <JOBTMPL/Package>`
+
+              * :gh:`actions/checkout`
+              * :gh:`actions/setup-python`
+              * :gh:`pyTooling/upload-artifact`
+
+                * :gh:`actions/upload-artifact`
+
+              * pip
+
+                * :term:`build` (:pypi:`PyPI package <build>`)
+                * :term:`wheel` (:pypi:`PyPI package <wheel>`)
+
+            * :ref:`pyTooling/Actions/.github/workflows/InstallPackage.yml <JOBTMPL/InstallPackage>`
+
+              * :gh:`actions/setup-python`
+              * :gh:`msys2/setup-msys2`
+              * :gh:`pyTooling/download-artifact`
+
+                * :gh:`actions/download-artifact`
+
+            * :ref:`pyTooling/Actions/.github/workflows/PublishTestResults.yml <JOBTMPL/PublishTestResults>`
+
+              * :gh:`actions/checkout`
+              * :gh:`pyTooling/download-artifact`
+
+                * :gh:`actions/download-artifact`
+
+              * pip
+
+                * :term:`pyEDAA.Reports` (:pypi:`PyPI package <pyEDAA.Reports>`)
+
+              * :gh:`dorny/test-reporter`
+              * :gh:`codecov/codecov-action`
+              * :gh:`pyTooling/upload-artifact`
+
+                * :gh:`actions/upload-artifact`
+
+         .. grid-item::
+            :columns: 6
+
+            * :ref:`pyTooling/Actions/.github/workflows/PublishCoverageResults.yml <JOBTMPL/PublishCoverageResults>`
+
+              * :gh:`actions/checkout`
+              * :gh:`pyTooling/download-artifact`
+
+                * :gh:`actions/download-artifact`
+
+              * pip
+
+                * :term:`Coverage.py` (:pypi:`PyPI package <coverage>`)
+
+              * :gh:`pyTooling/upload-artifact`
+
+                * :gh:`actions/upload-artifact`
+
+              * :gh:`codecov/codecov-action`
+              * :gh:`codacy/codacy-coverage-reporter-action`
+
+            * :ref:`pyTooling/Actions/.github/workflows/SphinxDocumentation.yml <JOBTMPL/SphinxDocumentation>`
+
+              * :gh:`actions/checkout`
+              * :gh:`actions/setup-python`
+              * :gh:`pyTooling/download-artifact`
+
+                * :gh:`actions/download-artifact`
+
+              * :gh:`pyTooling/upload-artifact`
+
+                * :gh:`actions/upload-artifact`
+
+              * apt
+
+                * `graphviz <https://graphviz.org/>`__
+
+              * pip
+
+                * :term:`wheel` (:pypi:`PyPI package <wheel>`)
+                * Python packages specified via :ref:`JOBTMPL/SphinxDocumentation/Input/requirements` parameter.
+
+            * :ref:`pyTooling/Actions/.github/workflows/LaTeXDocumentation.yml <JOBTMPL/LaTeXDocumentation>`
+
+              * :gh:`pyTooling/download-artifact`
+
+                * :gh:`actions/download-artifact`
+
+              * :gh:`pyTooling/upload-artifact`
+
+                * :gh:`actions/upload-artifact`
+
+              * runs inside :term:`pyTooling/MiKTeX` (:dockerhub:`Docker image <pytooling/miktex>`)
+
+            * :ref:`pyTooling/Actions/.github/workflows/PublishToGitHubPages.yml <JOBTMPL/PublishToGitHubPages>`
+
+              * :gh:`pyTooling/download-artifact`
+
+                * :gh:`actions/download-artifact`
+
+              * :gh:`actions/upload-pages-artifact`
+              * :gh:`actions/deploy-pages`
+              * :gh:`geekyeggo/delete-artifact`
+
+            * :ref:`pyTooling/Actions/.github/workflows/PublishOnPyPI.yml <JOBTMPL/PublishOnPyPI>`
+
+              * :gh:`pyTooling/download-artifact`
+
+                * :gh:`actions/download-artifact`
+              * :gh:`actions/setup-python`
+              * :gh:`geekyeggo/delete-artifact`
+              * pip
+
+                * :term:`wheel` (:pypi:`PyPI package <wheel>`)
+                * :term:`twine` (:pypi:`PyPI package <twine>`)
+
+            * :ref:`pyTooling/Actions/.github/workflows/TagReleaseCommit.yml <JOBTMPL/TagReleaseCommit>`
+
+              * :gh:`actions/github-script`
+
+            * :ref:`pyTooling/Actions/.github/workflows/PublishReleaseNotes.yml <JOBTMPL/PublishReleaseNotes>`
+
+              * :gh:`actions/checkout`
+              * ``gh`` (GitHub command line interface)
+              * ``jq`` (JSON processing)
+              * apt
+
+                * zstd
+
+            * :ref:`pyTooling/Actions/.github/workflows/CleanupArtifacts.yml <JOBTMPL/CleanupArtifacts>`
+              (instantiated twice: intermediate and final cleanup)
+
+              * :gh:`geekyeggo/delete-artifact`
+
+
+.. _JOBTMPL/CompletePipeline/Instantiation:
+
+Instantiation
+*************
+
+The following instantiation example creates a ``SimplePackage`` job derived from job template ``CompletePipeline``
+version ``@r8``. It only requires the `package_name` parameter to run a full pipeline suitable for a Python project.
+
+   .. grid:: 2
+
+      .. grid-item::
+         :columns: 6
+
+         .. tab-set::
+
+            .. tab-item:: Simple Package
+               :sync: Simple
+
+               .. code-block:: yaml
+
+                  name: Pipeline
+
+                  jobs:
+                    SimplePackage:
+                      uses: pyTooling/Actions/.github/workflows/CompletePipeline.yml@r8
+                      with:
+
+                        package_name: myPackage
+
+            .. tab-item:: Namespace Package
+               :sync: Namespace
+
+               .. code-block:: yaml
+
+                  name: Pipeline
+
+                  jobs:
+                    NamespacePackage:
+                      uses: pyTooling/Actions/.github/workflows/CompletePipeline.yml@r8
+                      with:
+                        package_namespace: myFramework
+                        package_name:      Extension
+
+      .. grid-item::
+         :columns: 6
+
+         .. tab-set::
+
+            .. tab-item:: Simple Package
+               :sync: Simple
+
+               .. code-block::
+
+                  📂ProjectRoot/
+                    📂myFramework/
+
+                      📦SubPackage/
+                        🐍__init__.py
+                        🐍SubModuleA.py
+                      🐍__init__.py
+                      🐍ModuleB.py
+
+
+            .. tab-item:: Namespace Package
+               :sync: Namespace
+
+               .. code-block::
+
+                  📂ProjectRoot/
+                    📂myFramework/
+                      📂Extension/
+                        📦SubPackage/
+                          🐍__init__.py
+                          🐍SubModuleA.py
+                        🐍__init__.py
+                        🐍ModuleB.py
+
+
+.. _JOBTMPL/CompletePipeline/Parameters:
+
+Parameter Summary
+*****************
+
+.. rubric:: Goto :ref:`input parameters <JOBTMPL/CompletePipeline/Inputs>`
+
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| Parameter Name                                                     | Required | Type   | Default                                                                    |
++====================================================================+==========+========+============================================================================+
+| :ref:`JOBTMPL/CompletePipeline/Input/package_namespace`            | no       | string | ``''``                                                                     |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/package_name`                 | yes      | string | — — — —                                                                    |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/version_file`                 | no       | string | ``'__init__.py'``                                                          |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/unittest_python_version`      | no       | string | ``'3.14'``                                                                 |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/unittest_python_version_list` | no       | string | ``'3.10 3.11 3.12 3.13 3.14'``                                             |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/unittest_system_list`         | no       | string | ``'ubuntu ubuntu-arm windows windows-arm macos macos-arm mingw64 ucrt64'`` |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/unittest_include_list`        | no       | string | ``''``                                                                     |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/unittest_exclude_list`        | no       | string | ``'windows-arm:3.9 windows-arm:3.10'``                                     |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/unittest_disable_list`        | no       | string | ``'windows-arm:pypy-3.10 windows-arm:pypy-3.11'``                          |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/unittest_parallel`            | no       | string | ``'auto'``                                                                 |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/apptest_python_version`       | no       | string | ``'3.14'``                                                                 |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/bandit`                       | no       | string | ``'false'``                                                                |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/pylint`                       | no       | string | ``'false'``                                                                |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/documentation_steps`          | no       | string | ``'html pages'``                                                           |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/miktex_image`                 | no       | string | ``'pytooling/miktex:sphinx'``                                              |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/miktex_update`                | no       | string | ``'false'``                                                                |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/publish_pages_on`             | no       | string | four conditions - see description                                          |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/auto_tag`                     | no       | string | ``'true'``                                                                 |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/check_pypi_duplicate`         | no       | string | ``'true'``                                                                 |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/pypi_url`                     | no       | string | ``'https://pypi.org'``                                                     |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/apptest_python_version_list`  | no       | string | ``''``                                                                     |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/apptest_system_list`          | no       | string | ``'ubuntu ubuntu-arm windows windows-arm macos macos-arm ucrt64'``         |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/apptest_include_list`         | no       | string | ``''``                                                                     |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/apptest_exclude_list`         | no       | string | ``'windows-arm:3.9 windows-arm:3.10'``                                     |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/apptest_disable_list`         | no       | string | ``'windows-arm:pypy-3.10 windows-arm:pypy-3.11'``                          |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/apptest_parallel`             | no       | string | ``'auto'``                                                                 |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/apptest`                      | no       | string | ``'false'``                                                                |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/codecov`                      | no       | string | ``'false'``                                                                |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/codacy`                       | no       | string | ``'false'``                                                                |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/dorny`                        | no       | string | ``'false'``                                                                |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/pypi_dry_run`                 | no       | string | ``'false'``                                                                |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/pypi_upload_url`              | no       | string | ``'https://upload.pypi.org/legacy/'``                                      |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+| :ref:`JOBTMPL/CompletePipeline/Input/cleanup`                      | no       | string | ``'true'``                                                                 |
++--------------------------------------------------------------------+----------+--------+----------------------------------------------------------------------------+
+
+.. rubric:: Goto :ref:`secrets <JOBTMPL/CompletePipeline/Secrets>`
+
++-----------------------------------------------------------+----------+----------+--------------+
+| Token Name                                                | Required | Type     | Default      |
++===========================================================+==========+==========+==============+
+| :ref:`JOBTMPL/CompletePipeline/Secret/PYPI_TOKEN`         | no       | string   | — — — —      |
++-----------------------------------------------------------+----------+----------+--------------+
+| :ref:`JOBTMPL/CompletePipeline/Secret/CODECOV_TOKEN`      | no       | string   | — — — —      |
++-----------------------------------------------------------+----------+----------+--------------+
+| :ref:`JOBTMPL/CompletePipeline/Secret/CODACY_TOKEN`       | no       | string   | — — — —      |
++-----------------------------------------------------------+----------+----------+--------------+
+
+.. rubric:: Goto :ref:`output parameters <JOBTMPL/CompletePipeline/Outputs>`
+
+This job template has no output parameters.
+
+
+.. _JOBTMPL/CompletePipeline/Inputs:
+
+Input Parameters
+****************
+
+.. _JOBTMPL/CompletePipeline/Input/package_namespace:
+
+package_namespace
+=================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``''``
+:Possible Values: Any valid Python namespace.
+:Description:     In case the package is a Python namespace package, the name of the library's or package's namespace
+                  needs to be specified using this parameter. |br|
+                  In case of a simple Python package, this parameter must be specified as an empty string (``''``),
+                  which is the default.
+:Example:
+                  .. grid:: 2
+
+                     .. grid-item::
+                        :columns: 5
+
+                        .. rubric:: Example Instantiation
+
+                        .. code-block:: yaml
+
+                           name: Pipeline
+
+                           jobs:
+                             NamespacePackage:
+                               uses: pyTooling/Actions/.github/workflows/CompletePipeline.yml@r8
+                               with:
+                                 package_namespace: myFramework
+                                 package_name:      Extension
+
+                     .. grid-item::
+                        :columns: 4
+
+                        .. rubric:: Example Directory Structure
+
+                        .. code-block::
+
+                           📂ProjectRoot/
+                             📂myFramework/
+                               📂Extension/
+                                 📦SubPackage/
+                                   🐍__init__.py
+                                   🐍SubModuleA.py
+                                 🐍__init__.py
+                                 🐍ModuleB.py
+
+
+.. _JOBTMPL/CompletePipeline/Input/package_name:
+
+package_name
+============
+
+:Type:            string
+:Required:        yes
+:Default Value:   — — — —
+:Possible Values: Any valid Python package name.
+:Description:     In case of a simple Python package, this package's name is specified using this parameter. |br|
+                  In case the package is a Python namespace package, the parameter
+                  :ref:`JOBTMPL/CompletePipeline/Input/package_namespace` must be specified, too.
+:Example:
+                  .. grid:: 2
+
+                     .. grid-item::
+                        :columns: 5
+
+                        .. rubric:: Example Instantiation
+
+                        .. code-block:: yaml
+
+                           name: Pipeline
+
+                           jobs:
+                             SimplePackage:
+                               uses: pyTooling/Actions/.github/workflows/CompletePipeline.yml@r8
+                               with:
+                                 package_name: myPackage
+
+                     .. grid-item::
+                        :columns: 4
+
+                        .. rubric:: Example Directory Structure
+
+                        .. code-block::
+
+                           📂ProjectRoot/
+                             📂myFramework/
+                               📦SubPackage/
+                                 🐍__init__.py
+                                 🐍SubModuleA.py
+                               🐍__init__.py
+                               🐍ModuleB.py
+
+
+.. _JOBTMPL/CompletePipeline/Input/version_file:
+
+version_file
+============
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'__init__.py'``
+:Possible Values: Any path relative to the package directory.
+:Description:     Module inside the package that carries the ``__version__`` variable. Forwarded to
+                  :ref:`JOBTMPL/Parameters/Input/version_file`. |br|
+                  A namespace package has no :file:`__init__.py` in its root, so its version is kept in a sub-package,
+                  e.g. ``'Common/__init__.py'`` for ``pyTooling.*``. |br|
+                  On a release commit and in the tag pipeline, this version must match the version derived from the
+                  pull-request title or tag, otherwise the release is refused.
+
+
+.. _JOBTMPL/CompletePipeline/Input/unittest_python_version:
+
+unittest_python_version
+=======================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'3.14'``
+:Possible Values: Any valid Python version conforming to the pattern ``<major>.<minor>`` or ``pypy-<major>.<minor>``. |br|
+                  See `actions/python-versions - available Python versions <https://github.com/actions/python-versions>`__
+                  and `actions/setup-python - configurable Python versions <https://github.com/actions/setup-python>`__.
+:Description:     The default Python version used for intermediate jobs using Python tools.
+
+                  In case :ref:`JOBTMPL/CompletePipeline/Input/unittest_python_version_list` is empty, this default
+                  version is used to populate the :ref:`JOBTMPL/CompletePipeline/Input/unittest_python_version_list`
+                  parameter.
+
+
+.. _JOBTMPL/CompletePipeline/Input/unittest_python_version_list:
+
+unittest_python_version_list
+============================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'3.10 3.11 3.12 3.13 3.14'``
+:Possible Values: A space separated list of valid Python versions conforming to the pattern ``<major>.<minor>`` or
+                  ``pypy-<major>.<minor>``.
+:Description:     The list of space-separated Python versions used for unit testing.
+
+                  .. include:: ../PythonVersionList.rst
+
+
+.. _JOBTMPL/CompletePipeline/Input/unittest_system_list:
+
+unittest_system_list
+====================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'ubuntu ubuntu-arm windows windows-arm macos macos-arm mingw64 ucrt64'``
+:Possible Values: A space separated list of system names.
+:Description:     The list of space-separated systems used for unit testing.
+
+                  .. include:: ../SystemList.rst
+
+
+.. _JOBTMPL/CompletePipeline/Input/unittest_include_list:
+
+unittest_include_list
+=====================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``''``
+:Possible Values: A space separated list of ``<system>:<python_version>`` tuples.
+:Description:     List of space-separated ``<system>:<python_version>`` tuples to be included into the list of unittest
+                  variants.
+
+                  For more details see :ref:`JOBTMPL/Parameters/Input/include_list`.
+
+
+.. _JOBTMPL/CompletePipeline/Input/unittest_exclude_list:
+
+unittest_exclude_list
+=====================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'windows-arm:3.9 windows-arm:3.10'``
+:Possible Values: A space separated list of ``<system>:<python_version>`` tuples.
+:Description:     List of space-separated ``<system>:<python_version>`` tuples to be excluded from the list of unittest
+                  variants.
+
+                  For more details see :ref:`JOBTMPL/Parameters/Input/exclude_list`.
+
+
+.. _JOBTMPL/CompletePipeline/Input/unittest_disable_list:
+
+unittest_disable_list
+=====================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'windows-arm:pypy-3.10 windows-arm:pypy-3.11'``
+:Possible Values: A space separated list of ``<system>:<python_version>`` tuples.
+:Description:     List of space-separated ``<system>:<python_version>`` tuples to be temporarily disabled from the list
+                  of unittest variants. |br|
+                  Each disabled item creates a warning in the workflow log.
+
+                  For more details see :ref:`JOBTMPL/Parameters/Input/disable_list`.
+
+
+.. _JOBTMPL/CompletePipeline/Input/unittest_parallel:
+
+unittest_parallel
+=================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'auto'``
+:Possible Values: ``'auto'``, a number of workers, or ``'false'``.
+:Description:     Number of :file:`pytest-xdist` workers for the unit tests. With ``'false'``, the tests run serially. |br|
+                  Passed on as :ref:`JOBTMPL/UnitTesting/Input/parallel`.
+
+
+.. _JOBTMPL/CompletePipeline/Input/apptest_python_version:
+
+apptest_python_version
+======================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'3.14'``
+:Possible Values: Any valid Python version conforming to the pattern ``<major>.<minor>`` or ``pypy-<major>.<minor>``. |br|
+                  See `actions/python-versions - available Python versions <https://github.com/actions/python-versions>`__
+                  and `actions/setup-python - configurable Python versions <https://github.com/actions/setup-python>`__.
+:Description:     The default Python version used for intermediate jobs using Python tools.
+
+                  In case :ref:`JOBTMPL/CompletePipeline/Input/apptest_python_version_list` is empty, this default
+                  version is used to populate the :ref:`JOBTMPL/CompletePipeline/Input/apptest_python_version_list`
+                  parameter.
+
+
+.. _JOBTMPL/CompletePipeline/Input/apptest_python_version_list:
+
+apptest_python_version_list
+===========================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``''``
+:Possible Values: A space separated list of valid Python versions conforming to the pattern ``<major>.<minor>`` or
+                  ``pypy-<major>.<minor>```.
+:Description:     The list of space-separated Python versions used for application testing.
+
+                  As this list is empty by default, the value is derived from
+                  :ref:`JOBTMPL/CompletePipeline/Input/apptest_python_version`.
+
+                  .. include:: ../PythonVersionList.rst
+
+
+.. _JOBTMPL/CompletePipeline/Input/apptest_system_list:
+
+apptest_system_list
+===================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'ubuntu ubuntu-arm windows windows-arm macos macos-arm ucrt64'``
+:Possible Values: A space separated list of system names.
+:Description:     The list of space-separated systems used for application testing.
+
+                  .. include:: ../SystemList.rst
+
+
+.. _JOBTMPL/CompletePipeline/Input/apptest_include_list:
+
+apptest_include_list
+====================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``''``
+:Possible Values: A space separated list of ``<system>:<python_version>`` tuples.
+:Description:     List of space-separated ``<system>:<python_version>`` tuples to be included into the list of
+                  application test variants.
+
+                  For more details see :ref:`JOBTMPL/Parameters/Input/include_list`.
+
+
+.. _JOBTMPL/CompletePipeline/Input/apptest_exclude_list:
+
+apptest_exclude_list
+====================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'windows-arm:3.9 windows-arm:3.10'``
+:Possible Values: A space separated list of ``<system>:<python_version>`` tuples.
+:Description:     List of space-separated ``<system>:<python_version>`` tuples to be excluded from the list of
+                  application test variants.
+
+                  For more details see :ref:`JOBTMPL/Parameters/Input/exclude_list`.
+
+
+.. _JOBTMPL/CompletePipeline/Input/apptest_disable_list:
+
+apptest_disable_list
+====================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'windows-arm:pypy-3.10 windows-arm:pypy-3.11'``
+:Possible Values: A space separated list of ``<system>:<python_version>`` tuples.
+:Description:     List of space-separated ``<system>:<python_version>`` tuples to be temporarily disabled from the list
+                  of application test variants. |br|
+                  Each disabled item creates a warning in the workflow log.
+
+                  For more details see :ref:`JOBTMPL/Parameters/Input/disable_list`.
+
+
+.. _JOBTMPL/CompletePipeline/Input/apptest_parallel:
+
+apptest_parallel
+================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'auto'``
+:Possible Values: ``'auto'``, a number of workers, or ``'false'``.
+:Description:     Number of :file:`pytest-xdist` workers for the application tests. With ``'false'``, the tests run serially. |br|
+                  Passed on as :ref:`JOBTMPL/ApplicationTesting/Input/parallel`.
+
+
+.. _JOBTMPL/CompletePipeline/Input/apptest:
+
+apptest
+=======
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'false'``
+:Possible Values: ``'true'`` / ``'false'``
+:Description:     Run application tests via :ref:`JOBTMPL/ApplicationTesting`. |br|
+                  Application testing installs the built wheel and exercises the package as an installed package,
+                  so it needs a packaging step to have run first. |br|
+                  ``'true'`` - run the application tests. |br|
+                  ``'false'`` - skip the application testing jobs.
+
+
+.. _JOBTMPL/CompletePipeline/Input/bandit:
+
+bandit
+======
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'false'``
+:Possible Values: ``'true'`` / ``'false'``
+:Description:     Run Static Application Security Testing (SAST) using :term:`bandit`. |br|
+                  ``'true'`` - run the *Bandit* job. |br|
+                  ``'false'`` - skip it.
+
+
+.. _JOBTMPL/CompletePipeline/Input/pylint:
+
+pylint
+======
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'false'``
+:Possible Values: ``'true'`` / ``'false'``
+:Description:     Run Python linting using :term:`pylint`. |br|
+                  ``'true'`` - run the *PyLint* job. |br|
+                  ``'false'`` - skip it.
+
+
+.. _JOBTMPL/CompletePipeline/Input/codecov:
+
+codecov
+=======
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'false'``
+:Possible Values: ``'true'`` / ``'false'``
+:Description:     Publish merged code coverage results and a merged unit test summary to :term:`CodeCov`. |br|
+                  ``'true'`` - publish; secret :ref:`JOBTMPL/CompletePipeline/Secret/CODECOV_TOKEN` must be set. |br|
+                  ``'false'`` - do not publish.
+
+
+.. _JOBTMPL/CompletePipeline/Input/codacy:
+
+codacy
+======
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'false'``
+:Possible Values: ``'true'`` / ``'false'``
+:Description:     Publish merged code coverage results to :term:`Codacy`. |br|
+                  ``'true'`` - publish; secret :ref:`JOBTMPL/CompletePipeline/Secret/CODACY_TOKEN` must be set. |br|
+                  ``'false'`` - do not publish.
+
+
+.. _JOBTMPL/CompletePipeline/Input/dorny:
+
+dorny
+=====
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'false'``
+:Possible Values: ``'true'`` / ``'false'``
+:Description:     Publish a merged unit test summary as pipeline result using :term:`Test Reporter`. |br|
+                  ``'true'`` - create the report page. |br|
+                  ``'false'`` - do not create it.
+
+
+.. _JOBTMPL/CompletePipeline/Input/documentation_steps:
+
+documentation_steps
+===================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'html pages'``
+:Possible Values: A space separated list of ``none``, ``html``, ``latex``, ``pdf``, ``pages``, ``asset`` or ``all``.
+:Description:     Documentation steps to run.
+
+                  :html:  Build the HTML documentation using :term:`Sphinx`.
+                  :latex: Build the LaTeX documentation using :term:`Sphinx`.
+                  :pdf:   Translate the LaTeX documentation to PDF using :term:`MikTeX`. Requires ``latex``.
+                  :pages: Publish the HTML documentation to :term:`GitHub Pages`. Requires ``html``.
+                  :asset: Attach the documentation to the release page.
+                  :all:   All of the above.
+                  :none:  No documentation at all.
+
+                  A step that is not listed is skipped and its artifact is not produced.
+
+                  .. note::
+
+                     ``pages`` additionally requires the pipeline's ref to match
+                     :ref:`JOBTMPL/CompletePipeline/Input/publish_pages_on`.
+
+
+.. _JOBTMPL/CompletePipeline/Input/miktex_image:
+
+miktex_image
+============
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'pytooling/miktex:sphinx'``
+:Possible Values: Any Docker image providing a :term:`MikTeX` installation with ``latexmk``, e.g. an image of
+                  :term:`pyTooling/MiKTeX`.
+:Description:     Docker image used to translate LaTeX to PDF. |br|
+                  Forwarded to :ref:`JOBTMPL/LaTeXDocumentation/Input/miktex_image`.
+
+.. _JOBTMPL/CompletePipeline/Input/miktex_update:
+
+miktex_update
+=============
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'false'``
+:Possible Values: ``'true'`` / ``'false'``
+:Description:     Update the :term:`MikTeX` packages before building the PDF. |br|
+                  Forwarded to :ref:`JOBTMPL/LaTeXDocumentation/Input/update`. |br|
+                  ``'true'`` - update the packages inside the container first. |br|
+                  ``'false'`` - use the packages shipped with the image.
+
+
+.. _JOBTMPL/CompletePipeline/Input/publish_pages_on:
+
+publish_pages_on
+================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``default-branch``, ``development-branch``, ``release-tag`` and ``nightly-tag``, one per line.
+:Possible Values: A newline separated list of conditions, see :ref:`JOBTMPL/PrepareJob/Input/publish_pages_on`.
+:Description:     Conditions on the pipeline's ref under which the documentation is published to
+                  :term:`GitHub Pages`, if :ref:`JOBTMPL/CompletePipeline/Input/documentation_steps` contains
+                  ``pages``. Forwarded to :ref:`JOBTMPL/PrepareJob/Input/publish_pages_on`. |br|
+                  A ``github-pages`` environment restricted to selected branches or tags rejects a deployment from
+                  any other ref before a runner is assigned, so the job fails after one second without a log. The
+                  conditions should not admit more refs than the environment does.
+
+
+.. _JOBTMPL/CompletePipeline/Input/auto_tag:
+
+auto_tag
+========
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'true'``
+:Possible Values: ``'true'`` / ``'false'``
+:Description:     Create a release tag when a pull-request was merged into the release branch and its title
+                  matches the release tag pattern. |br|
+                  The new tag triggers a second, tagged pipeline run which publishes the release. Forwarded to
+                  :ref:`JOBTMPL/TagReleaseCommit/Input/auto_tag`. |br|
+                  ``'true'`` - tag the release commit. |br|
+                  ``'false'`` - never tag automatically.
+
+
+.. _JOBTMPL/CompletePipeline/Input/check_pypi_duplicate:
+
+check_pypi_duplicate
+====================
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'true'``
+:Possible Values: ``'true'`` / ``'false'``
+:Description:     Refuse to tag a release commit, if :ref:`JOBTMPL/CompletePipeline/Input/pypi_url` - by default
+                  :term:`PyPI` - already has a release of this version. Forwarded to
+                  :ref:`JOBTMPL/CheckReleaseVersion/Input/check_pypi_duplicate`. |br|
+                  PyPI never accepts a version twice, but it refuses the upload only at the end of the tag pipeline -
+                  after the tag was created and the release page was published. |br|
+                  ``'true'`` - query PyPI before tagging. |br|
+                  ``'false'`` - don't query PyPI, e.g. for a package that isn't published there.
+
+
+.. _JOBTMPL/CompletePipeline/Input/pypi_url:
+
+pypi_url
+========
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'https://pypi.org'``
+:Possible Values: Base URL of a package registry offering the PyPI JSON API, e.g. ``'https://test.pypi.org'``.
+:Description:     The package registry checked for an existing release, if
+                  :ref:`JOBTMPL/CompletePipeline/Input/check_pypi_duplicate` is ``'true'``. Forwarded to
+                  :ref:`JOBTMPL/CheckReleaseVersion/Input/pypi_url`. |br|
+                  Set :ref:`JOBTMPL/CompletePipeline/Input/pypi_upload_url` to the same registry.
+
+
+.. _JOBTMPL/CompletePipeline/Input/pypi_dry_run:
+
+pypi_dry_run
+============
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'false'``
+:Possible Values: ``'true'`` / ``'false'``
+:Description:     Validate the built packages with ``twine check`` instead of uploading them to :term:`PyPI`.
+                  Forwarded to :ref:`JOBTMPL/PublishOnPyPI/Input/dry_run`. |br|
+                  Intended for a pipeline that builds a package which is never published - a fixture used to
+                  exercise the job templates, or a fork that must not push to the upstream project's PyPI name. |br|
+                  ``'true'`` - check the packages and publish nothing. |br|
+                  ``'false'`` - publish the packages.
+
+
+.. _JOBTMPL/CompletePipeline/Input/pypi_upload_url:
+
+pypi_upload_url
+===============
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'https://upload.pypi.org/legacy/'``
+:Possible Values: Upload URL of a package registry, e.g. ``'https://test.pypi.org/legacy/'``.
+:Description:     The package registry the packages are uploaded to. Forwarded to
+                  :ref:`JOBTMPL/PublishOnPyPI/Input/pypi_upload_url`. |br|
+                  Set :ref:`JOBTMPL/CompletePipeline/Input/pypi_url` to the same registry.
+
+
+.. _JOBTMPL/CompletePipeline/Input/cleanup:
+
+cleanup
+=======
+
+:Type:            string
+:Required:        no
+:Default Value:   ``'true'``
+:Possible Values: ``'true'`` / ``'false'``
+:Description:     Remove intermediate artifacts once they were merged or consumed. |br|
+                  ``'true'`` - delete them. |br|
+                  ``'false'`` - keep them, which helps debugging artifact handovers between jobs.
+
+
+.. _JOBTMPL/CompletePipeline/Secrets:
+
+Secrets
+*******
+
+The workflow template uses the following secrets to publish results to other services.
+
+
+.. _JOBTMPL/CompletePipeline/Secret/PYPI_TOKEN:
+
+PYPI_TOKEN
+==========
+
+:Type:            string
+:Required:        no
+:Default Value:   — — — —
+:Description:     The token to publish and upload packages on :term:`PyPI`.
+
+
+.. _JOBTMPL/CompletePipeline/Secret/CODECOV_TOKEN:
+
+CODECOV_TOKEN
+=============
+
+:Type:            string
+:Required:        no
+:Default Value:   — — — —
+:Description:     The token to publish code coverage and unit test results to :term:`CodeCov`.
+
+
+.. _JOBTMPL/CompletePipeline/Secret/CODACY_TOKEN:
+
+CODACY_TOKEN
+============
+
+:Type:            string
+:Required:        no
+:Default Value:   — — — —
+:Description:     The token to publish code coverage results to :term:`Codacy`.
+
+
+.. _JOBTMPL/CompletePipeline/Outputs:
+
+Outputs
+*******
+
+This job template has no output parameters.
+
+
+.. _JOBTMPL/CompletePipeline/Optimizations:
+
+Optimizations
+*************
+
+The following optimizations can be used to reduce the template's runtime.
+
+.. todo::
+
+   CompletePipeline::Optimizations Needs a list of optimizations.
