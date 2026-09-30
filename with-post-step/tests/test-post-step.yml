@@ -1,0 +1,40 @@
+name: Test post step execution
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        env:
+          STATE_POST: "true"
+        with:
+          main: 'echo "main step executed" > /tmp/main-ran.txt'
+          post: 'echo "post step executed" > /tmp/post-ran.txt'
+
+      - name: Assert post command ran (STATE_POST was set)
+        run: |
+          if [ ! -f /tmp/post-ran.txt ]; then
+            echo "FAIL: post command did not create expected file"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/post-ran.txt)
+          echo "post output: $CONTENT"
+          if [ "$CONTENT" != "post step executed" ]; then
+            echo "FAIL: unexpected content in post output file"
+            exit 1
+          fi
+          echo "PASS: post command ran successfully"
+
+      - name: Assert main command did NOT run (STATE_POST was set)
+        run: |
+          if [ -f /tmp/main-ran.txt ]; then
+            echo "FAIL: main command ran during post step (should not have)"
+            exit 1
+          fi
+          echo "PASS: main command correctly did not run during post step"

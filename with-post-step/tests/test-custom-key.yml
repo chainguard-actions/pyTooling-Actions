@@ -1,0 +1,75 @@
+name: Test custom key input
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-main-with-custom-key:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "main with custom key" > /tmp/custom-key-main.txt'
+          post: 'echo "post with custom key" > /tmp/custom-key-post.txt'
+          key: 'MYKEY'
+
+      - name: Assert main command ran with custom key
+        run: |
+          if [ ! -f /tmp/custom-key-main.txt ]; then
+            echo "FAIL: main command did not create expected file"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/custom-key-main.txt)
+          echo "main output: $CONTENT"
+          if [ "$CONTENT" != "main with custom key" ]; then
+            echo "FAIL: unexpected content in main output file"
+            exit 1
+          fi
+          echo "PASS: main command ran with custom key"
+
+      - name: Assert post command did NOT run (STATE_MYKEY not set)
+        run: |
+          if [ -f /tmp/custom-key-post.txt ]; then
+            echo "FAIL: post command ran during main step (should not have)"
+            exit 1
+          fi
+          echo "PASS: post command correctly did not run during main step"
+
+  test-post-with-custom-key:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action-post
+        uses: .
+        env:
+          STATE_MYKEY: "true"
+        with:
+          main: 'echo "main with custom key" > /tmp/custom-key-main2.txt'
+          post: 'echo "post with custom key" > /tmp/custom-key-post2.txt'
+          key: 'MYKEY'
+
+      - name: Assert post command ran with custom key
+        run: |
+          if [ ! -f /tmp/custom-key-post2.txt ]; then
+            echo "FAIL: post command did not create expected file"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/custom-key-post2.txt)
+          echo "post output: $CONTENT"
+          if [ "$CONTENT" != "post with custom key" ]; then
+            echo "FAIL: unexpected content in post output file"
+            exit 1
+          fi
+          echo "PASS: post command ran with custom key"
+
+      - name: Assert main command did NOT run (STATE_MYKEY was set)
+        run: |
+          if [ -f /tmp/custom-key-main2.txt ]; then
+            echo "FAIL: main command ran during post step (should not have)"
+            exit 1
+          fi
+          echo "PASS: main command correctly did not run during post step"
