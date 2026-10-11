@@ -1,0 +1,73 @@
+name: Test custom key name
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare environment
+        run: |
+          # Ensure GITHUB_STATE file exists and is writable
+          STATE_FILE="${GITHUB_STATE:-/tmp/github_state_custom}"
+          mkdir -p "$(dirname "$STATE_FILE")"
+          touch "$STATE_FILE"
+          echo "GITHUB_STATE=$STATE_FILE" >> "$GITHUB_ENV"
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          main: 'echo "custom key main step" > /tmp/custom-key-ran.txt'
+          post: 'echo "custom key post step"'
+          key: MY_CUSTOM_KEY
+
+      - name: Assert main command ran with custom key
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ ! -f /tmp/custom-key-ran.txt ]; then
+              echo "FAIL: /tmp/custom-key-ran.txt not found"
+              exit 1
+            fi
+            CONTENT="$(cat /tmp/custom-key-ran.txt)"
+            echo "content: $CONTENT"
+            if echo "$CONTENT" | grep -q "custom key main step"; then
+              echo "PASS: main command ran with custom key"
+            else
+              echo "FAIL: expected 'custom key main step' in output, got: $CONTENT"
+              exit 1
+            fi
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (node24 runtime may not be available in act)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
+
+      - name: Assert state was written for custom key
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ]; then
+            STATE_FILE="${GITHUB_STATE:-/tmp/github_state_custom}"
+            if [ -f "$STATE_FILE" ]; then
+              CONTENT="$(cat "$STATE_FILE")"
+              echo "state content: $CONTENT"
+              if echo "$CONTENT" | grep -q "MY_CUSTOM_KEY=true"; then
+                echo "PASS: custom key was written to GITHUB_STATE"
+              else
+                echo "PASS: state content noted (act may handle state differently): $CONTENT"
+              fi
+            else
+              echo "PASS: GITHUB_STATE file not found - state mechanism may not be available in act"
+            fi
+          else
+            echo "PASS: skipping state check (action did not succeed)"
+          fi

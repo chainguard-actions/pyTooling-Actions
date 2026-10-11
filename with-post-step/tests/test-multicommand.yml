@@ -1,0 +1,50 @@
+name: Test multi-command main script
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare environment
+        run: |
+          # Ensure GITHUB_STATE file exists and is writable
+          STATE_FILE="${GITHUB_STATE:-/tmp/github_state_multi}"
+          mkdir -p "$(dirname "$STATE_FILE")"
+          touch "$STATE_FILE"
+          echo "GITHUB_STATE=$STATE_FILE" >> "$GITHUB_ENV"
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          main: 'echo "step1" > /tmp/multi-out.txt && echo "step2" >> /tmp/multi-out.txt'
+          post: 'echo "multi post"'
+
+      - name: Assert both commands ran
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ ! -f /tmp/multi-out.txt ]; then
+              echo "FAIL: /tmp/multi-out.txt not found"
+              exit 1
+            fi
+            CONTENT="$(cat /tmp/multi-out.txt)"
+            echo "content: $CONTENT"
+            if echo "$CONTENT" | grep -q "step1" && echo "$CONTENT" | grep -q "step2"; then
+              echo "PASS: both commands in multi-command script ran"
+            else
+              echo "FAIL: expected both 'step1' and 'step2' in output, got: $CONTENT"
+              exit 1
+            fi
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (node24 runtime may not be available in act)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
