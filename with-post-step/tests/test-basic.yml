@@ -1,0 +1,45 @@
+name: Test basic usage - main command runs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up GITHUB_STATE and clean sentinel files
+        run: |
+          # Ensure GITHUB_STATE is set and the file exists
+          if [ -z "$GITHUB_STATE" ]; then
+            echo "GITHUB_STATE is not set, creating one"
+            export GITHUB_STATE=/tmp/github_state_basic
+            echo "GITHUB_STATE=/tmp/github_state_basic" >> "$GITHUB_ENV"
+          fi
+          mkdir -p "$(dirname "$GITHUB_STATE")"
+          touch "$GITHUB_STATE"
+          echo "GITHUB_STATE=$GITHUB_STATE"
+          rm -f /tmp/main-ran.txt /tmp/post-ran.txt
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "main-step-executed" > /tmp/main-ran.txt'
+          post: 'echo "post-step-executed" > /tmp/post-ran.txt'
+          key: POST
+
+      - name: Assert main command ran
+        run: |
+          echo "Checking if main command ran..."
+          if [ ! -f /tmp/main-ran.txt ]; then
+            echo "FAIL: /tmp/main-ran.txt not found — main command did not run"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/main-ran.txt)
+          echo "content: [$CONTENT]"
+          if [ "$CONTENT" != "main-step-executed" ]; then
+            echo "FAIL: expected 'main-step-executed' but got '$CONTENT'"
+            exit 1
+          fi
+          echo "PASS: main command ran successfully"

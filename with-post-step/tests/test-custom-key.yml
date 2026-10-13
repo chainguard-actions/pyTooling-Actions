@@ -1,0 +1,87 @@
+name: Test custom key name
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-main-with-custom-key:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up GITHUB_STATE and clean sentinel files
+        run: |
+          if [ -z "$GITHUB_STATE" ]; then
+            echo "GITHUB_STATE=/tmp/github_state_custom_main" >> "$GITHUB_ENV"
+          fi
+          mkdir -p "$(dirname "${GITHUB_STATE:-/tmp/github_state_custom_main}")"
+          touch "${GITHUB_STATE:-/tmp/github_state_custom_main}"
+          rm -f /tmp/main-custom-ran.txt /tmp/post-custom-ran.txt
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "main-custom-key" > /tmp/main-custom-ran.txt'
+          post: 'echo "post-custom-key" > /tmp/post-custom-ran.txt'
+          key: MY_CUSTOM_KEY
+
+      - name: Assert main command ran with custom key
+        run: |
+          echo "Checking if main command ran..."
+          if [ ! -f /tmp/main-custom-ran.txt ]; then
+            echo "FAIL: /tmp/main-custom-ran.txt not found — main command did not run"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/main-custom-ran.txt)
+          echo "content: [$CONTENT]"
+          if [ "$CONTENT" != "main-custom-key" ]; then
+            echo "FAIL: expected 'main-custom-key' but got '$CONTENT'"
+            exit 1
+          fi
+          echo "PASS: main command ran with custom key"
+
+  test-post-with-custom-key:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up GITHUB_STATE and clean sentinel files
+        run: |
+          if [ -z "$GITHUB_STATE" ]; then
+            echo "GITHUB_STATE=/tmp/github_state_custom_post" >> "$GITHUB_ENV"
+          fi
+          mkdir -p "$(dirname "${GITHUB_STATE:-/tmp/github_state_custom_post}")"
+          touch "${GITHUB_STATE:-/tmp/github_state_custom_post}"
+          rm -f /tmp/main-custom-ran.txt /tmp/post-custom-ran.txt
+
+      - id: action-post
+        uses: .
+        env:
+          STATE_MY_CUSTOM_KEY: "true"
+        with:
+          main: 'echo "main-custom-key" > /tmp/main-custom-ran.txt'
+          post: 'echo "post-custom-key" > /tmp/post-custom-ran.txt'
+          key: MY_CUSTOM_KEY
+
+      - name: Assert post command ran with custom key
+        run: |
+          echo "Checking if post command ran..."
+          if [ ! -f /tmp/post-custom-ran.txt ]; then
+            echo "FAIL: /tmp/post-custom-ran.txt not found — post command did not run"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/post-custom-ran.txt)
+          echo "content: [$CONTENT]"
+          if [ "$CONTENT" != "post-custom-key" ]; then
+            echo "FAIL: expected 'post-custom-key' but got '$CONTENT'"
+            exit 1
+          fi
+          echo "PASS: post command ran with custom key"
+
+      - name: Assert main command did NOT run
+        run: |
+          if [ -f /tmp/main-custom-ran.txt ]; then
+            echo "FAIL: /tmp/main-custom-ran.txt exists — main command ran but should not have"
+            exit 1
+          fi
+          echo "PASS: main command did not run (as expected in post step)"

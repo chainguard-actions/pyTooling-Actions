@@ -1,0 +1,79 @@
+name: Test lowercase key is uppercased
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-main-with-lowercase-key:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up GITHUB_STATE and clean sentinel files
+        run: |
+          if [ -z "$GITHUB_STATE" ]; then
+            echo "GITHUB_STATE=/tmp/github_state_lower_main" >> "$GITHUB_ENV"
+          fi
+          mkdir -p "$(dirname "${GITHUB_STATE:-/tmp/github_state_lower_main}")"
+          touch "${GITHUB_STATE:-/tmp/github_state_lower_main}"
+          rm -f /tmp/main-lower-ran.txt /tmp/post-lower-ran.txt
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "main-lowercase-key" > /tmp/main-lower-ran.txt'
+          post: 'echo "post-lowercase-key" > /tmp/post-lower-ran.txt'
+          key: mykey
+
+      - name: Assert main command ran
+        run: |
+          echo "Checking if main command ran..."
+          if [ ! -f /tmp/main-lower-ran.txt ]; then
+            echo "FAIL: /tmp/main-lower-ran.txt not found — main command did not run"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/main-lower-ran.txt)
+          echo "content: [$CONTENT]"
+          if [ "$CONTENT" != "main-lowercase-key" ]; then
+            echo "FAIL: expected 'main-lowercase-key' but got '$CONTENT'"
+            exit 1
+          fi
+          echo "PASS: main command ran"
+
+  test-post-with-lowercase-key:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up GITHUB_STATE and clean sentinel files
+        run: |
+          if [ -z "$GITHUB_STATE" ]; then
+            echo "GITHUB_STATE=/tmp/github_state_lower_post" >> "$GITHUB_ENV"
+          fi
+          mkdir -p "$(dirname "${GITHUB_STATE:-/tmp/github_state_lower_post}")"
+          touch "${GITHUB_STATE:-/tmp/github_state_lower_post}"
+          rm -f /tmp/main-lower-ran.txt /tmp/post-lower-ran.txt
+
+      - id: action-post
+        uses: .
+        env:
+          STATE_MYKEY: "true"
+        with:
+          main: 'echo "main-lowercase-key" > /tmp/main-lower-ran.txt'
+          post: 'echo "post-lowercase-key" > /tmp/post-lower-ran.txt'
+          key: mykey
+
+      - name: Assert post command ran when STATE_MYKEY is set
+        run: |
+          echo "Checking if post command ran..."
+          if [ ! -f /tmp/post-lower-ran.txt ]; then
+            echo "FAIL: /tmp/post-lower-ran.txt not found — post command did not run"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/post-lower-ran.txt)
+          echo "content: [$CONTENT]"
+          if [ "$CONTENT" != "post-lowercase-key" ]; then
+            echo "FAIL: expected 'post-lowercase-key' but got '$CONTENT'"
+            exit 1
+          fi
+          echo "PASS: post command ran when STATE_MYKEY was set (lowercase key uppercased correctly)"

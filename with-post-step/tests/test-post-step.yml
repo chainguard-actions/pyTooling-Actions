@@ -1,0 +1,54 @@
+name: Test post step execution
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up GITHUB_STATE and clean sentinel files
+        run: |
+          # Ensure GITHUB_STATE is set and the file exists
+          if [ -z "$GITHUB_STATE" ]; then
+            echo "GITHUB_STATE is not set, creating one"
+            echo "GITHUB_STATE=/tmp/github_state_post" >> "$GITHUB_ENV"
+          fi
+          mkdir -p "$(dirname "${GITHUB_STATE:-/tmp/github_state_post}")"
+          touch "${GITHUB_STATE:-/tmp/github_state_post}"
+          echo "GITHUB_STATE=${GITHUB_STATE:-/tmp/github_state_post}"
+          rm -f /tmp/main-ran.txt /tmp/post-ran.txt
+
+      - id: action
+        uses: .
+        env:
+          STATE_POST: "true"
+        with:
+          main: 'echo "main-step-executed" > /tmp/main-ran.txt'
+          post: 'echo "post-step-executed" > /tmp/post-ran.txt'
+          key: POST
+
+      - name: Assert post command ran
+        run: |
+          echo "Checking if post command ran..."
+          if [ ! -f /tmp/post-ran.txt ]; then
+            echo "FAIL: /tmp/post-ran.txt not found — post command did not run"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/post-ran.txt)
+          echo "content: [$CONTENT]"
+          if [ "$CONTENT" != "post-step-executed" ]; then
+            echo "FAIL: expected 'post-step-executed' but got '$CONTENT'"
+            exit 1
+          fi
+          echo "PASS: post command ran successfully"
+
+      - name: Assert main command did NOT run
+        run: |
+          if [ -f /tmp/main-ran.txt ]; then
+            echo "FAIL: /tmp/main-ran.txt exists — main command ran but should not have"
+            exit 1
+          fi
+          echo "PASS: main command did not run (as expected in post step)"
