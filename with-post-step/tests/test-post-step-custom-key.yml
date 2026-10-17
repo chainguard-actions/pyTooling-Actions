@@ -1,0 +1,43 @@
+name: Test post step with custom key - post command runs when custom state variable is set
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        env:
+          # Simulate the post step by pre-setting the custom state variable
+          # The action does key.toUpperCase() so 'cleanup' becomes 'CLEANUP'
+          STATE_CLEANUP: "true"
+        with:
+          main: 'echo "main-ran" > /tmp/custom-post-main.txt'
+          post: 'echo "post-ran" > /tmp/custom-post-post.txt'
+          key: cleanup
+
+      - name: Assert post command was executed (not main)
+        run: |
+          if [ ! -f /tmp/custom-post-post.txt ]; then
+            echo "FAIL: post command did not create output file"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/custom-post-post.txt)
+          echo "post content: $CONTENT"
+          if [ "$CONTENT" != "post-ran" ]; then
+            echo "FAIL: expected 'post-ran' but got '$CONTENT'"
+            exit 1
+          fi
+          echo "PASS: post command executed correctly with custom key"
+
+      - name: Assert main command was NOT executed
+        run: |
+          if [ -f /tmp/custom-post-main.txt ]; then
+            echo "FAIL: main command should not have run in post step mode"
+            exit 1
+          fi
+          echo "PASS: main command correctly skipped in post step mode with custom key"

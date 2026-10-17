@@ -1,0 +1,42 @@
+name: Test post step - runs post command when state variable is set
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        env:
+          # Simulate the post step by pre-setting the state variable
+          # The action checks STATE_<KEY> to determine if it's in the post step
+          STATE_POST: "true"
+        with:
+          main: 'echo "main-step-ran" > /tmp/post-step-main.txt'
+          post: 'echo "post-step-ran" > /tmp/post-step-post.txt'
+
+      - name: Assert post command was executed (not main)
+        run: |
+          if [ ! -f /tmp/post-step-post.txt ]; then
+            echo "FAIL: post command did not create output file"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/post-step-post.txt)
+          echo "post content: $CONTENT"
+          if [ "$CONTENT" != "post-step-ran" ]; then
+            echo "FAIL: expected 'post-step-ran' but got '$CONTENT'"
+            exit 1
+          fi
+          echo "PASS: post command executed correctly"
+
+      - name: Assert main command was NOT executed
+        run: |
+          if [ -f /tmp/post-step-main.txt ]; then
+            echo "FAIL: main command should not have run in post step mode"
+            exit 1
+          fi
+          echo "PASS: main command correctly skipped in post step mode"

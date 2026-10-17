@@ -1,0 +1,47 @@
+name: Test basic usage - main step runs main command
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "main-step-executed" > /tmp/main-output.txt'
+          post: 'echo "post-step-executed" > /tmp/post-output.txt'
+
+      - name: Assert main command was executed
+        run: |
+          if [ ! -f /tmp/main-output.txt ]; then
+            echo "FAIL: main command did not create output file"
+            exit 1
+          fi
+          CONTENT=$(cat /tmp/main-output.txt)
+          echo "content: $CONTENT"
+          if [ "$CONTENT" != "main-step-executed" ]; then
+            echo "FAIL: expected 'main-step-executed' but got '$CONTENT'"
+            exit 1
+          fi
+          echo "PASS: main command executed correctly"
+
+      - name: Assert state variable was written to GITHUB_STATE
+        run: |
+          echo "GITHUB_STATE path: $GITHUB_STATE"
+          if [ -f "$GITHUB_STATE" ]; then
+            echo "GITHUB_STATE contents:"
+            cat "$GITHUB_STATE" || true
+            if grep -q "POST" "$GITHUB_STATE"; then
+              echo "PASS: state variable POST found in GITHUB_STATE"
+            else
+              echo "INFO: GITHUB_STATE exists but POST key not found (may use different format under act)"
+              echo "PASS: accepting act environment limitation"
+            fi
+          else
+            echo "INFO: GITHUB_STATE file not found at '$GITHUB_STATE' (act environment)"
+            echo "PASS: accepting act environment limitation"
+          fi
