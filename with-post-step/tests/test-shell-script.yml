@@ -1,0 +1,37 @@
+name: Test shell script as main command
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        name: Run action with a multi-command shell script
+        uses: .
+        with:
+          main: 'echo "step1" > /tmp/shell_test.txt && echo "step2" >> /tmp/shell_test.txt'
+          post: 'echo "cleanup done"'
+
+      - name: Assert both shell commands ran
+        run: |
+          if [ ! -f /tmp/shell_test.txt ]; then
+            echo "FAIL: shell test output file not found"
+            exit 1
+          fi
+          LINE1="$(sed -n '1p' /tmp/shell_test.txt)"
+          LINE2="$(sed -n '2p' /tmp/shell_test.txt)"
+          echo "line1: $LINE1"
+          echo "line2: $LINE2"
+          if [ "$LINE1" != "step1" ]; then
+            echo "FAIL: expected 'step1' on line 1, got '$LINE1'"
+            exit 1
+          fi
+          if [ "$LINE2" != "step2" ]; then
+            echo "FAIL: expected 'step2' on line 2, got '$LINE2'"
+            exit 1
+          fi
+          echo "PASS: multi-command shell script executed correctly"

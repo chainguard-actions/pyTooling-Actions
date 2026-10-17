@@ -1,0 +1,32 @@
+name: Test custom key
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        name: Run action with custom key
+        uses: .
+        with:
+          main: 'echo "CUSTOM_KEY_MAIN" > /tmp/custom_key_output.txt'
+          post: 'echo "CUSTOM_KEY_POST"'
+          key: MY_CUSTOM_KEY
+
+      - name: Assert main command ran with custom key
+        run: |
+          if [ ! -f /tmp/custom_key_output.txt ]; then
+            echo "FAIL: output file not found — main command did not run"
+            exit 1
+          fi
+          CONTENT="$(cat /tmp/custom_key_output.txt)"
+          echo "output: $CONTENT"
+          if [ "$CONTENT" != "CUSTOM_KEY_MAIN" ]; then
+            echo "FAIL: expected 'CUSTOM_KEY_MAIN', got '$CONTENT'"
+            exit 1
+          fi
+          echo "PASS: main command executed with custom key"

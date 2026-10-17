@@ -1,0 +1,34 @@
+name: Test basic usage
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create output file location
+        run: echo "Setting up test"
+
+      - id: action
+        name: Run action with basic echo commands
+        uses: .
+        with:
+          main: 'echo "MAIN_STEP_EXECUTED" > /tmp/main_output.txt'
+          post: 'echo "POST_STEP_EXECUTED" > /tmp/post_output.txt'
+
+      - name: Assert main command ran
+        run: |
+          if [ ! -f /tmp/main_output.txt ]; then
+            echo "FAIL: main output file not found — main command did not run"
+            exit 1
+          fi
+          CONTENT="$(cat /tmp/main_output.txt)"
+          echo "main output: $CONTENT"
+          if [ "$CONTENT" != "MAIN_STEP_EXECUTED" ]; then
+            echo "FAIL: expected 'MAIN_STEP_EXECUTED', got '$CONTENT'"
+            exit 1
+          fi
+          echo "PASS: main command executed correctly"
