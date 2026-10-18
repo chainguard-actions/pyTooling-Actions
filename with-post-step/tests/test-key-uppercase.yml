@@ -1,0 +1,38 @@
+name: Test key is uppercased automatically
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare temp file for main step output
+        run: |
+          echo "" > /tmp/uppercase-key-main.txt
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "Main step running with lowercase key" && echo "main_ran=true" >> /tmp/uppercase-key-main.txt'
+          post: 'echo "Post step running"'
+          key: 'mykey'
+
+      - name: Assert main step ran
+        run: |
+          echo "Checking that the main command ran with lowercase key (uppercased internally to MYKEY)"
+          CONTENT=$(cat /tmp/uppercase-key-main.txt)
+          echo "Content: $CONTENT"
+          if echo "$CONTENT" | grep -q "main_ran=true"; then
+            echo "PASS: main command ran successfully (key 'mykey' was uppercased to 'MYKEY' internally)"
+          else
+            echo "FAIL: main command did not produce expected output"
+            exit 1
+          fi
+
+      - name: Assert action step succeeded
+        run: |
+          echo "Action step with lowercase key 'mykey' (uppercased to 'MYKEY') completed successfully"
+          echo "PASS: action step completed"

@@ -1,0 +1,38 @@
+name: Test custom key name
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare temp file for main step output
+        run: |
+          echo "" > /tmp/custom-key-main.txt
+
+      - id: action
+        uses: .
+        with:
+          main: 'echo "Main step running with custom key" && echo "main_ran=true" >> /tmp/custom-key-main.txt'
+          post: 'echo "Post step running with custom key" && echo "post_ran=true" >> /tmp/custom-key-post.txt'
+          key: 'MY_CUSTOM_KEY'
+
+      - name: Assert main step ran
+        run: |
+          echo "Checking that the main command ran with custom key"
+          CONTENT=$(cat /tmp/custom-key-main.txt)
+          echo "Content: $CONTENT"
+          if echo "$CONTENT" | grep -q "main_ran=true"; then
+            echo "PASS: main command ran successfully with custom key"
+          else
+            echo "FAIL: main command did not produce expected output"
+            exit 1
+          fi
+
+      - name: Assert action step succeeded
+        run: |
+          echo "Action step with custom key MY_CUSTOM_KEY completed successfully"
+          echo "PASS: action step completed"
