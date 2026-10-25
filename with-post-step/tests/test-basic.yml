@@ -1,0 +1,39 @@
+name: Test basic usage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Clean markers
+        run: rm -f /tmp/wps-main-basic /tmp/wps-post-basic
+      - id: action
+        uses: .
+        with:
+          main: echo "main-ran" > /tmp/wps-main-basic
+          post: echo "post-ran" > /tmp/wps-post-basic
+      - name: Assert main command ran and post did not run yet
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected success"
+            exit 1
+          fi
+          if [ ! -f /tmp/wps-main-basic ]; then
+            echo "FAIL: main marker not found"
+            exit 1
+          fi
+          CONTENT="$(cat /tmp/wps-main-basic)"
+          echo "main marker: $CONTENT"
+          if [ "$CONTENT" != "main-ran" ]; then
+            echo "FAIL: unexpected main marker content"
+            exit 1
+          fi
+          if [ -f /tmp/wps-post-basic ]; then
+            echo "FAIL: post command ran during main step"
+            exit 1
+          fi
+          echo "PASS"

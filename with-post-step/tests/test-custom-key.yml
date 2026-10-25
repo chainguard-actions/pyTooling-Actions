@@ -1,0 +1,41 @@
+name: Test custom state key and multi-line main script
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Clean markers
+        run: rm -f /tmp/wps-main-key /tmp/wps-post-key
+      - id: action
+        uses: .
+        with:
+          key: myPostKey
+          main: |
+            echo "line1" > /tmp/wps-main-key
+            echo "line2" >> /tmp/wps-main-key
+          post: echo "post-ran" > /tmp/wps-post-key
+      - name: Assert main script ran fully and post not yet run
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected success"
+            exit 1
+          fi
+          if [ ! -f /tmp/wps-main-key ]; then
+            echo "FAIL: main marker not found"
+            exit 1
+          fi
+          cat /tmp/wps-main-key
+          if [ "$(wc -l < /tmp/wps-main-key | tr -d ' ')" != "2" ]; then
+            echo "FAIL: expected 2 lines from multi-line main script"
+            exit 1
+          fi
+          if [ -f /tmp/wps-post-key ]; then
+            echo "FAIL: post command ran during main step"
+            exit 1
+          fi
+          echo "PASS"
