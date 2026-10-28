@@ -13,7 +13,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | v8.1.0 | [`v8.1.0`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v8.1.0) | — | [`with-post-step`](https://github.com/chainguard-actions/pyTooling-Actions/blob/v8.1.0/with-post-step/HARDENING.md) |
 | v8.2.0 | [`v8.2.0`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v8.2.0) | — | [`with-post-step`](https://github.com/chainguard-actions/pyTooling-Actions/blob/v8.2.0/with-post-step/HARDENING.md) |
 | v8.3.0 | [`v8.3.0`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v8.3.0) | — | [`with-post-step`](https://github.com/chainguard-actions/pyTooling-Actions/blob/v8.3.0/with-post-step/HARDENING.md) |
-| v8.4.0 | [`v8.4.0`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v8.4.0) | [`22bc11a`](https://github.com/pyTooling/Actions/commit/22bc11a5866e6dbd27dd1f8f449401c6b4203c72) | [`with-post-step`](https://github.com/chainguard-actions/pyTooling-Actions/blob/v8.4.0/with-post-step/HARDENING.md) |
+| v8.4.0 | [`v8.4.0`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v8.4.0) | — | [`with-post-step`](https://github.com/chainguard-actions/pyTooling-Actions/blob/v8.4.0/with-post-step/HARDENING.md) |
 | v8.5.0 | [`v8.5.0`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v8.5.0) | — | [`with-post-step`](https://github.com/chainguard-actions/pyTooling-Actions/blob/v8.5.0/with-post-step/HARDENING.md) |
 | v8.5.1 | [`v8.5.1`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v8.5.1) | — | [`with-post-step`](https://github.com/chainguard-actions/pyTooling-Actions/blob/v8.5.1/with-post-step/HARDENING.md) |
 | v8.5.2 | [`v8.5.2`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v8.5.2) | — | [`with-post-step`](https://github.com/chainguard-actions/pyTooling-Actions/blob/v8.5.2/with-post-step/HARDENING.md) |
@@ -23,6 +23,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | v9.2.1 | [`v9.2.1`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v9.2.1) | — | [`with-post-step`](https://github.com/chainguard-actions/pyTooling-Actions/blob/v9.2.1/with-post-step/HARDENING.md) |
 | v9.3.0 | [`v9.3.0`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v9.3.0) | — | [`with-post-step`](https://github.com/chainguard-actions/pyTooling-Actions/blob/v9.3.0/with-post-step/HARDENING.md) |
 | v9.3.1 | [`v9.3.1`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v9.3.1) | — | [`with-post-step`](https://github.com/chainguard-actions/pyTooling-Actions/blob/v9.3.1/with-post-step/HARDENING.md) |
+| v9.3.2 | [`v9.3.2`](https://github.com/chainguard-actions/pyTooling-Actions/tree/v9.3.2) | [`947313f`](https://github.com/pyTooling/Actions/commit/947313f905e49ebbdd2ba8beff93af0476d81bba) | [`with-post-step`](https://github.com/chainguard-actions/pyTooling-Actions/blob/v9.3.2/with-post-step/HARDENING.md) |
 
 ## Privacy
 
