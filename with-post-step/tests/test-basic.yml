@@ -1,0 +1,37 @@
+name: Test basic main command execution
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          main: echo "main-ran" > /tmp/with-post-main.txt
+          post: echo "post-ran" > /tmp/with-post-post.txt
+      - name: Assert main ran and post has not run yet
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected success"
+            exit 1
+          fi
+          if [ ! -f /tmp/with-post-main.txt ]; then
+            echo "FAIL: main command did not create file"
+            exit 1
+          fi
+          CONTENT="$(cat /tmp/with-post-main.txt)"
+          echo "main file: $CONTENT"
+          if [ "$CONTENT" != "main-ran" ]; then
+            echo "FAIL: unexpected main file content"
+            exit 1
+          fi
+          if [ -f /tmp/with-post-post.txt ]; then
+            echo "FAIL: post command ran during main phase"
+            exit 1
+          fi
+          echo "PASS"

@@ -1,0 +1,36 @@
+name: Test custom state key
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          key: myCustomKey
+          main: |
+            echo "custom-main" > /tmp/with-post-custom-main.txt
+            echo "second line" >> /tmp/with-post-custom-main.txt
+          post: echo "custom-post" > /tmp/with-post-custom-post.txt
+      - name: Assert multi-line main script ran with custom key
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected success"
+            exit 1
+          fi
+          cat /tmp/with-post-custom-main.txt || { echo "FAIL: main file missing"; exit 1; }
+          if [ "$(head -n1 /tmp/with-post-custom-main.txt)" != "custom-main" ] || \
+             [ "$(sed -n 2p /tmp/with-post-custom-main.txt)" != "second line" ]; then
+            echo "FAIL: unexpected main file content"
+            exit 1
+          fi
+          if [ -f /tmp/with-post-custom-post.txt ]; then
+            echo "FAIL: post command ran during main phase"
+            exit 1
+          fi
+          echo "PASS"
