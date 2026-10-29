@@ -1,0 +1,37 @@
+name: Test basic main and post
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Prepare marker dir
+        run: |
+          rm -rf /tmp/withpost-basic
+          mkdir -p /tmp/withpost-basic
+      - id: action
+        uses: .
+        with:
+          main: echo "main-ran" > /tmp/withpost-basic/main.txt
+          # Post step verifies main already ran; failing here fails the job.
+          post: |
+            set -e
+            echo "post step running"
+            test "$(cat /tmp/withpost-basic/main.txt)" = "main-ran"
+            test -f /tmp/withpost-basic/after.txt
+            echo "post-ran" > /tmp/withpost-basic/post.txt
+            echo "PASS: post step ran after main and after later steps"
+      - name: Assert main ran and post has not yet run
+        run: |
+          echo "main.txt: $(cat /tmp/withpost-basic/main.txt 2>/dev/null)"
+          if [ "$(cat /tmp/withpost-basic/main.txt 2>/dev/null)" != "main-ran" ]; then
+            echo "FAIL: main command did not run"
+            exit 1
+          fi
+          if [ -f /tmp/withpost-basic/post.txt ]; then
+            echo "FAIL: post command ran during main step"
+            exit 1
+          fi
+          touch /tmp/withpost-basic/after.txt
+          echo "PASS"

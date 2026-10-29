@@ -1,0 +1,34 @@
+name: Test custom key
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Prepare marker dir
+        run: |
+          rm -rf /tmp/withpost-key
+          mkdir -p /tmp/withpost-key
+      - id: action
+        uses: .
+        with:
+          key: my_custom_key
+          main: echo "main" > /tmp/withpost-key/main.txt
+          post: |
+            set -e
+            test -f /tmp/withpost-key/main.txt
+            test ! -f /tmp/withpost-key/post.txt
+            echo "post" > /tmp/withpost-key/post.txt
+            echo "PASS: post ran with custom key"
+      - name: Assert main ran only (not post)
+        run: |
+          if [ ! -f /tmp/withpost-key/main.txt ]; then
+            echo "FAIL: main did not run"
+            exit 1
+          fi
+          if [ -f /tmp/withpost-key/post.txt ]; then
+            echo "FAIL: post ran during main step"
+            exit 1
+          fi
+          echo "PASS"

@@ -1,0 +1,20 @@
+-r ../requirements.txt
+
+# The documentation's Sphinx extension - roles, 'tree', 'shields', ... Its extra 'reports' adds the domain 'report'
+# (unit tests, code and documentation coverage).
+pyTooling.Sphinx[reports] ~= 1.0
+
+# Enforce latest version on ReadTheDocs
+sphinx ~= 9.1
+# docutils ~= 0.22.0
+docutils_stubs ~= 0.0.22
+
+# ReadTheDocs Theme
+sphinx_rtd_theme ~= 3.1
+
+# Sphinx Extenstions
+sphinxcontrib-mermaid ~= 2.1
+autoapi >= 2.0.1
+sphinx_design ~= 0.7.0
+sphinx-copybutton >= 0.5.2
+sphinx_autodoc_typehints ~= 3.13

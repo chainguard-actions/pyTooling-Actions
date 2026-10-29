@@ -1,0 +1,23 @@
+name: Test main command sets output
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          main: echo "greeting=hello-from-main" >> "$GITHUB_OUTPUT"
+          post: echo "post done"
+      - name: Assert output
+        env:
+          ACTUAL: ${{ steps.action.outputs.greeting }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$ACTUAL" != "hello-from-main" ]; then
+            echo "FAIL: expected 'hello-from-main'"
+            exit 1
+          fi
+          echo "PASS"
